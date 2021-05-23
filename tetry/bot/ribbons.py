@@ -3,12 +3,8 @@ import websockets
 import asyncio
 
 from .urls import *
-from .message import pack
-
-class Connection:
-    def __init__(self):
-        pass
-
+from .message import pack, unpack
+from .events import Event
 
 async def send(ws, data):
     await ws.send(pack(data))
@@ -31,21 +27,30 @@ def getRibbon(token):
     else:
         raise BaseException(json['errors'][0]['msg'])
 
-async def getSocket(token):
-    ribbon = getRibbon(token)
-    return await websockets.connect(ribbon)
-
-
-# connect ->  reciver()
+# connect ->  receiver()
 #             heartbeat()
 # connect to a websocket and start a reciver and a heartbeat proccess
 
-async def connect(token):
-    socket = await getSocket(token)
-    return await socket.connect()
+conn = Event()
 
+async def connect(token):
+    ribbon = getRibbon(token)
+    ws = await websockets.connect(ribbon)
+    conn.trigger(ws)
+    return ws
+
+message = Event()
+
+@conn.addListener
 async def heartbeat(ws):
     d = 5
     while True:
         send(ws, 0x0B)
         await asyncio.sleep(d)
+
+@conn.addListener
+async def reciver(ws):
+    while True:
+        res = await ws.recv()
+        print(unpack(res))
+        message.trigger(res)

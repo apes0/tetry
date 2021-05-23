@@ -1,14 +1,12 @@
-from .ribbons import send, connect
+from .ribbons import send, connect, message
 from .events import Event
+import asyncio
 
 # api docs: https://github.com/Poyo-SSB/tetrio-bot-docs
 
 events = [
     'recive',
-    'open',
-    'gameStart',
-    'gameEnd',
-    'start'
+    'send'
 ]
 
 class Client:
@@ -18,11 +16,20 @@ class Client:
         self.room = None
         self.endpoint = None
         self.events = {}
+        self.wsid = None
+        self.resume = None
+        self.requests = []
         for event in events:
             self.events[event] = Event(event)
 
-    def send(self, data):
-        send(self.ws, data)
+    async def send(self, data):
+        await send(self.ws, data)
+    
+    @message.addListener
+    async def login(self, msg):
+        self.wsid = msg['id']
+        self.resume = msg['resume']
+        self.requests.append(msg)
     
     def event(self, func): # event decorator
         name = func.__name__
@@ -35,5 +42,14 @@ class Bot:
         self.client = Client()
         self.token = token
     
-    async def run(self):
-        await connect(self.token)
+    def run(self):
+        asyncio.run(self._run())
+
+    async def _run(self):
+        ws = await connect(self.token)
+        self.client.ws = ws
+        self.ws = ws
+        await self.send({'command':'new'})
+
+    async def send(self, data):
+        await self.client.send(data)

@@ -33,14 +33,41 @@ def pack(data):
 # unpacker
 
 def unpackBatchTag(data):
-    dat = data.split(b'\x00\x00\x00\x00')
     lens = []
-    for i in range(len(dat[0])//4):
-        n = dat[0][i:i+4]
-        n = struct.unpack('!I', n)
+    for i in range(0, len(data), 4):
+        n = data[i:i+4]
+        n = struct.unpack('!I', n)[0]
+        if not n:
+            break
         lens.append(n)
+    start = (len(lens) + 1)*4
+    data = data[start:]
+    out = []
+    for l in lens:
+        res = unpack(data[:l])
+        out.append(res)
+        data = data[l:]
+    return out
+
+def unpackExtractedId(data):
+    try:
+        id = data[:4]
+        res = msgpack.unpackb(data[4:])
+    except:
+        id = None
+        res = msgpack.unpackb(data)
+    return (id, res)
+
 
 # unpack data
 
 def unpack(data):
-    pass
+    prefix = data[0]
+    d = data[1:]
+    if prefix == 0x45:
+        d = msgpack.unpackb(d)
+    elif prefix == 0x58:
+        d = unpackBatchTag(d)
+    elif prefix == 0xAE:
+        d = unpackExtractedId(d)
+    return d
