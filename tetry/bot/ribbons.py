@@ -7,7 +7,9 @@ from .message import pack, unpack
 from .events import Event
 
 async def send(ws, data):
+    print('send')
     await ws.send(pack(data))
+    print(f'sent {data}')
 
 def checkToken(token):
     headers = {'authorization': f'Bearer {token}'}
@@ -36,21 +38,24 @@ conn = Event()
 async def connect(token):
     ribbon = getRibbon(token)
     ws = await websockets.connect(ribbon)
-    conn.trigger(ws)
-    return ws
+    await conn.trigger(ws)
 
 message = Event()
 
 @conn.addListener
 async def heartbeat(ws):
+    print('heartbeat')
     d = 5
     while True:
-        send(ws, 0x0B)
         await asyncio.sleep(d)
+        await send(ws, 0x0B)
 
 @conn.addListener
 async def reciver(ws):
+    print('recv')
     while True:
         res = await ws.recv()
-        print(unpack(res))
-        message.trigger(res)
+        res = unpack(res)
+        print(res)
+        await message.trigger(res)
+        print('a')

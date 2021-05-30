@@ -50,12 +50,8 @@ def unpackBatchTag(data):
     return out
 
 def unpackExtractedId(data):
-    try:
-        id = data[:4]
-        res = msgpack.unpackb(data[4:])
-    except:
-        id = None
-        res = msgpack.unpackb(data)
+    id = data[:4]
+    res = msgpack.unpackb(data[4:])
     return (id, res)
 
 
