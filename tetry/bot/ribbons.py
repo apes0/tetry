@@ -1,10 +1,18 @@
 import requests
 import websockets
 import asyncio
+import re
 
 from .urls import *
 from .message import pack, unpack
 from .events import Event
+
+def getCommit():
+    url = 'https://tetr.io/tetrio.js'
+    regex = '"commit":{"id":"([0-9a-fA-F]*)"'
+    headers = {"Range": "bytes=0-1000"} # get only the first 1000 bytes from tetrio
+    text = requests.get(url, headers=headers).text
+    return re.search(regex, text).group(1)
 
 async def send(ws, data):
     print('send')
@@ -37,7 +45,7 @@ conn = Event()
 
 async def connect(token):
     ribbon = getRibbon(token)
-    ws = await websockets.connect(ribbon)
+    ws = await websockets.connect(ribbon, ping_interval=None, ssl=True)
     await conn.trigger(ws)
 
 message = Event()
@@ -56,6 +64,5 @@ async def reciver(ws):
     while True:
         res = await ws.recv()
         res = unpack(res)
-        print(res)
-        await message.trigger(res)
-        print('a')
+        print(f'recived {res}')
+        await message.trigger(ws, res)

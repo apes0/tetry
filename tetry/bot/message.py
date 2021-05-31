@@ -27,6 +27,7 @@ def pack(data):
         d = batchTag(data)
     else:
         d = standartId(data)
+    print(d)
     return d
 
 
