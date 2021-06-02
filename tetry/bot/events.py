@@ -1,4 +1,4 @@
-import asyncio
+import trio
 
 
 class Event:
@@ -8,9 +8,9 @@ class Event:
 
     async def trigger(self, *args):
         print(f'_trigger with {args}')
-        funcs = [func(*args) for func in self.funcs]
-        print(funcs, args)
-        await asyncio.gather(*funcs)
+        async with trio.open_nursery() as nursery:
+            for func in self.funcs:
+                nursery.start_soon(func, *args)
 
     def addListener(self, func):
         print(f'add listener {func}')

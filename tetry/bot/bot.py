@@ -1,7 +1,7 @@
 from .ribbons import send, connect, message, conn
 from .events import Event
 from .commands import *
-import asyncio
+import trio
 
 # api docs: https://github.com/Poyo-SSB/tetrio-bot-docs
 
@@ -9,7 +9,8 @@ import asyncio
 # login
 
 async def login(ws):
-    await send(ws, new)
+    Bot.ws = ws
+    await send(new, ws)
     message.addListener(resp)
 
 async def resp(ws, msg):
@@ -17,35 +18,21 @@ async def resp(ws, msg):
         msg = msg[1]
     comm = msg['command']
     if comm == 'hello':
-        await send(ws, authorize(Bot.messageId, Bot.token, Bot.handling))
+        await send(authorize(Bot.messageId, Bot.token, Bot.handling), ws)
     elif comm == 'authorize':
-        await send(ws, presence('online'))
+        await send(presence('online'), ws)
         message.removeListener(resp)
+        await Bot.events['ready'].trigger()
 
-#client and bot classes
+# bot class
 
-events = []
-
-class Client:
-    def __init__(self):
-        self.token = None
-        self.room = None
-        self.endpoint = None
-        self.events = {}
-        self.wsid = None
-        self.resume = None
-        self.requests = []
-        for event in events:
-            self.events[event] = Event(event)
-
-    def event(self, func): # event decorator
-        name = func.__name__
-        if name.startswith('on_'):
-            name = name[3:]
-        self.events[name].addListener(func)
+events = [
+    'ready'
+    ]
 
 class Bot:
-    messageId = 1
+    events = {}
+    messageId = 0
     handling = {
         'arr': 0,
         'das': 6,
@@ -55,14 +42,31 @@ class Bot:
         'dcd': 0,
     }
     token = ''
+    ws = None
     def __init__(self, token):
         self.token = token
         Bot.token = token
+        self.room = ''
+        for event in events:
+            Bot.events[event] = Event(event)
     
     def run(self):
-        asyncio.run(self._run())
+        trio.run(self._run)
+
+    async def join(self, code):
+        self.room = code
+        await send(joinroom(code, Bot.messageId), Bot.ws)
 
     async def _run(self):
         print('_run')
         conn.addListener(login)
-        await connect(self.token)
+        await connect(self)
+
+    def event(self, func): # event decorator
+        name = func.__name__
+        if name.startswith('on_'):
+            name = name[3:]
+        self.events[name].addListener(func)
+    
+    async def stop(self):
+        await send(die, Bot.ws)

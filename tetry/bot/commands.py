@@ -31,3 +31,10 @@ def presence(status, detail=''):
         'status': status,
         'detail': detail
     }
+
+def joinroom(room, id):
+    return {
+        'id': id,
+        'command': 'joinroom',
+        'data': room
+    }

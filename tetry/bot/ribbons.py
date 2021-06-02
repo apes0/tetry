@@ -1,6 +1,6 @@
 import requests
-import websockets
-import asyncio
+from trio_websocket import open_websocket_url
+import trio
 import re
 
 from .urls import *
@@ -8,15 +8,13 @@ from .message import pack, unpack
 from .events import Event
 
 def getCommit():
-    url = 'https://tetr.io/tetrio.js'
     regex = '"commit":{"id":"([0-9a-fA-F]*)"'
     headers = {"Range": "bytes=0-1000"} # get only the first 1000 bytes from tetrio
-    text = requests.get(url, headers=headers).text
+    text = requests.get(tetrioJs, headers=headers).text
     return re.search(regex, text).group(1)
 
-async def send(ws, data):
-    print('send')
-    await ws.send(pack(data))
+async def send(data, ws=None):
+    await ws.send_message(pack(data, ws))
     print(f'sent {data}')
 
 def checkToken(token):
@@ -43,10 +41,12 @@ def getRibbon(token):
 
 conn = Event()
 
-async def connect(token):
+async def connect(bot):
+    token = bot.token
     ribbon = getRibbon(token)
-    ws = await websockets.connect(ribbon, ping_interval=None, ssl=True)
-    await conn.trigger(ws)
+    async with open_websocket_url(ribbon) as ws:
+        ws.bot = bot
+        await conn.trigger(ws)
 
 message = Event()
 
@@ -55,14 +55,14 @@ async def heartbeat(ws):
     print('heartbeat')
     d = 5
     while True:
-        await asyncio.sleep(d)
-        await send(ws, 0x0B)
+        await trio.sleep(d)
+        await send(b'\x0B', ws)
 
 @conn.addListener
 async def reciver(ws):
     print('recv')
     while True:
-        res = await ws.recv()
+        res = await ws.get_message()
         res = unpack(res)
         print(f'recived {res}')
         await message.trigger(ws, res)

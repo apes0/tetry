@@ -17,17 +17,25 @@ def extensionTag(data):
     prefix = b'\xB0'
     return prefix + data
 
+def extractedId(data):
+    prefix = b'\xAE'
+    id = data['id']
+    id = struct.pack('!I', id)
+    return prefix + id + msgpack.packb(data)
+
 
 # pack data
 
-def pack(data):
+def pack(data, ws):
     if isinstance(data, bytes): # only extension tags are a bytes object
         d = extensionTag(data)
     elif isinstance(data, list): # # only batch tags are a dict object
         d = batchTag(data)
+    elif 'id' in data:
+        d = extractedId(data)
+        ws.bot.messageId += 1
     else:
         d = standartId(data)
-    print(d)
     return d
 
 
