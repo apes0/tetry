@@ -4,6 +4,7 @@ new = {
     'command': 'new'
 }
 
+
 def authorize(msgid, token, handling):
     return {
         'id': msgid,
@@ -12,18 +13,20 @@ def authorize(msgid, token, handling):
             'token': token,
             'handling': handling,
             'signature': {
-                'commit':{
+                'commit': {
                     'id': getCommit()
-                    }
                 }
             }
         }
+    }
+
 
 die = {
     'command': 'die'
 }
 
-ping = 0x0B
+ping = b'\x0B'
+
 
 def presence(status, detail=''):
     return {
@@ -32,9 +35,37 @@ def presence(status, detail=''):
         'detail': detail
     }
 
+
 def joinroom(room, id):
     return {
         'id': id,
         'command': 'joinroom',
         'data': room
+    }
+
+
+def createroom(public: bool, id):
+    if public:
+        public = 'public'
+    else:
+        public = 'private'
+    return {
+        'id': id,
+        'command': 'createroom',
+        'data': public
+    }
+
+
+def resume(sockId, resume):
+    return {
+        'command': 'resume',
+        'socketid': sockId,
+        'resumetoken': resume
+    }
+
+
+def hello(msgs):
+    return {
+        'command': 'hello',
+        'packets': msgs
     }

@@ -1,1 +1,3 @@
-websockets
+trio-websockets
+trio
+msgpack

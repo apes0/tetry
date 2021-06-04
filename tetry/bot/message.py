@@ -1,6 +1,6 @@
-import msgpack
 import struct
 
+import msgpack
 
 # packer
 
@@ -8,14 +8,17 @@ def standartId(data):
     prefix = b'\x45'
     return prefix + msgpack.packb(data)
 
+
 def batchTag(data):
     prefix = b'\x58'
     # struckt pack with !I
     return prefix + msgpack.packb(data)
 
+
 def extensionTag(data):
     prefix = b'\xB0'
     return prefix + data
+
 
 def extractedId(data):
     prefix = b'\xAE'
@@ -26,14 +29,13 @@ def extractedId(data):
 
 # pack data
 
-def pack(data, ws):
-    if isinstance(data, bytes): # only extension tags are a bytes object
+def pack(data):
+    if isinstance(data, bytes):  # only extension tags are a bytes object
         d = extensionTag(data)
-    elif isinstance(data, list): # # only batch tags are a dict object
+    elif isinstance(data, list):  # only batch tags are a dict object
         d = batchTag(data)
     elif 'id' in data:
         d = extractedId(data)
-        ws.bot.messageId += 1
     else:
         d = standartId(data)
     return d
@@ -57,6 +59,7 @@ def unpackBatchTag(data):
         out.append(res)
         data = data[l:]
     return out
+
 
 def unpackExtractedId(data):
     id = data[:4]
