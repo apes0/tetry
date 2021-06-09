@@ -4,6 +4,8 @@ import trio
 from trio_websocket import connect_websocket_url
 
 from .commands import *
+from .room import Room
+from .chatMessage import ChatMessage
 from .events import Event
 from .ribbons import conn, connect, message, send, sendEv
 
@@ -14,36 +16,46 @@ from .ribbons import conn, connect, message, send, sendEv
 
 
 @conn.addListener
-async def heartbeat(ws):
-    print('heartbeat')
+async def heartbeat(bot):
     d = 5
     while True:
+        ws = bot.ws
         await trio.sleep(d)
-        await send(ping, ws)
+        try:
+            await send(ping, ws)
+        except:
+            return # disconnected
 
 
-async def login(ws):
-    Bot.ws = ws
-    await send(new, ws)
+async def login(bot):
+    await send(new, bot.ws)
     conn.removeListener(login)
     message.addListener(resp)
 
 
 async def resp(ws, msg):
-    print('bot resp')
     bot = ws.bot
     if isinstance(msg, tuple):
+        _ = msg[0]
         msg = msg[1]
     if isinstance(msg, bytes):
         return
+    if isinstance(msg, list):
+        for m in msg:
+            print(m, len(msg))
+            await resp(ws, m)
+            return
     comm = msg['command']
+    print(comm)
     if comm == 'hello':
         bot.sockid = msg['id']
         bot.resume = msg['resume']
-        await send(authorize(bot.messageId, Bot.token, bot.handling), ws)
+        await send(authorize(bot.messageId, bot.token, bot.handling), ws)
     elif comm == 'authorize':
         await send(presence('online'), ws)
         await bot.events['ready'].trigger(ws.nurs)
+    elif comm == 'chat':
+        pass
 
 
 async def reconnect(ws, sockid, resumeToken, nurs, bot):
@@ -59,9 +71,10 @@ async def reconnect(ws, sockid, resumeToken, nurs, bot):
 @message.addListener
 async def msgHandle(ws, msg):
     bot = ws.bot
-    if isinstance(msg, bytes):
+    nurs = bot.nurs
+    if isinstance(msg, bytes) or isinstance(msg, list):
         return
-    if isinstance(msg, tuple) or isinstance(msg, list):
+    if isinstance(msg, tuple):
         msg = msg[1]
     comm = msg['command']
     if comm == 'migrate':
@@ -70,6 +83,12 @@ async def msgHandle(ws, msg):
         await reconnect(ws, bot.sockid, bot.resume, bot.nurs, bot)
     elif comm == 'err':
         raise Exception(msg['data'])
+    elif comm == 'gmupdate':
+        room = Room(msg['data'])
+        bot.room = room
+        await bot.events['joinedRoom'].trigger(nurs, room)
+    elif comm == 'chat':
+        await bot.events['message'].trigger(nurs, ChatMessage(msg['data']))
 
 
 @sendEv.addListener
@@ -78,6 +97,7 @@ async def changeId(msg, ws):
         return
     if 'id' in msg:
         ws.bot.messageId += 1
+        await log(msg, ws)
 
 
 class Message:
@@ -89,7 +109,6 @@ class Message:
         return time.time() - self.time >= t
 
 
-@sendEv.addListener
 async def log(msg, ws):
     bot = ws.bot
     messages = bot.messages
@@ -101,21 +120,21 @@ async def log(msg, ws):
             messages.pop(0)
         else:
             break
-    print(bot, messages, msg, ws.bot)
     bot.messages = messages
 
 # bot class
 
 events = [
-    'ready'
+    'ready',
+    'joinedRoom',
+    'message'
 ]
 
 
 class Bot:
     def __init__(self, token):
         self.token = token
-        Bot.token = token
-        self.room = ''
+        self.room = None
         self.messageId = 0
         self.serverId = 0
         self.events = {}
@@ -130,6 +149,8 @@ class Bot:
             'cancel': False,
             'dcd': 0,
         }
+        self.nurs = None
+        self.ws = None
         for event in events:
             self.events[event] = Event(event)
 
@@ -138,15 +159,13 @@ class Bot:
 
     async def joinRoom(self, code: str):
         code = code.upper()
-        self.room = code
-        await send(joinroom(code, self.messageId), Bot.ws)
+        await send(joinroom(code, self.messageId), self.ws)
 
     async def createRoom(self, public: bool):
-        await send(createroom(public, self.messageId), Bot.ws)
+        await send(createroom(public, self.messageId), self.ws)
 
     async def _run(self):
         async with trio.open_nursery() as nurs:
-            print('_run')
             conn.addListener(login)
             nurs.start_soon(connect, self, nurs)
             self.nurs = nurs
@@ -158,4 +177,7 @@ class Bot:
         self.events[name].addListener(func)
 
     async def stop(self):
-        await send(die, Bot.ws)
+        await send(die, self.ws)
+
+    async def send(self, message):
+        await send(chat(message, self.messageId), self.ws)

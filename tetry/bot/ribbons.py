@@ -17,7 +17,7 @@ def getCommit():
     return re.search(regex, text).group(1)
 
 
-sendEv = Event()
+sendEv = Event('sendEv')
 
 
 async def send(data, ws):
@@ -51,7 +51,7 @@ def getRibbon(token):
 # connect to a websocket and start a reciver and a heartbeat proccess
 
 
-conn = Event()
+conn = Event('conn')
 
 
 async def connect(bot, nurs):
@@ -60,17 +60,18 @@ async def connect(bot, nurs):
     ws = await connect_websocket_url(nurs, ribbon)
     ws.nurs = nurs
     ws.bot = bot
-    nurs.start_soon(conn.trigger, nurs, ws)
+    bot.ws = ws
+    nurs.start_soon(conn.trigger, nurs, bot)
     await trio.sleep_forever()
 
-message = Event()
+message = Event('message')
 
 
 @conn.addListener
-async def reciver(ws):
-    print('recv')
+async def reciver(bot):
     while True:
         try:
+            ws = bot.ws
             res = await ws.get_message()
         except:
             return  # disconnected

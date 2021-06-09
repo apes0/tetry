@@ -5,7 +5,7 @@ new = {
 }
 
 
-def authorize(msgid, token, handling):
+def authorize(msgid:int, token:str, handling:dict):
     return {
         'id': msgid,
         'command': 'authorize',
@@ -28,7 +28,7 @@ die = {
 ping = b'\x0B'
 
 
-def presence(status, detail=''):
+def presence(status:str, detail:str=''):
     return {
         'command': 'social.presence',
         'status': status,
@@ -36,7 +36,7 @@ def presence(status, detail=''):
     }
 
 
-def joinroom(room, id):
+def joinroom(room:str, id:int):
     return {
         'id': id,
         'command': 'joinroom',
@@ -44,7 +44,7 @@ def joinroom(room, id):
     }
 
 
-def createroom(public: bool, id):
+def createroom(public: bool, id:int):
     if public:
         public = 'public'
     else:
@@ -56,7 +56,7 @@ def createroom(public: bool, id):
     }
 
 
-def resume(sockId, resume):
+def resume(sockId:str, resume:str):
     return {
         'command': 'resume',
         'socketid': sockId,
@@ -64,8 +64,16 @@ def resume(sockId, resume):
     }
 
 
-def hello(msgs):
+def hello(msgs:list):
     return {
         'command': 'hello',
         'packets': msgs
+    }
+
+
+def chat(msg:str, id:int):
+    return {
+        'id': id,
+        'command': 'chat',
+        'data': msg
     }
