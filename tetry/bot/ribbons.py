@@ -1,3 +1,4 @@
+import logging
 import re
 
 import requests
@@ -7,6 +8,8 @@ from trio_websocket import connect_websocket_url
 from .events import Event
 from .message import pack, unpack
 from .urls import *
+
+logger = logging.getLogger(__name__)
 
 
 def getCommit():
@@ -24,15 +27,15 @@ async def send(data, ws):
     await sendEv.trigger(ws.nurs, data, ws)
     data = pack(data)
     await ws.send_message(data)
-    print(f'sent {data}')
+    logger.info(f'sent {data}')
 
 
-def checkToken(token):
+def getInfo(token):
     headers = {'authorization': f'Bearer {token}'}
     res = requests.get(me, headers=headers)
     json = res.json()
     if json['success']:
-        return json
+        return json['user']
     else:
         raise BaseException(json['errors'][0]['msg'])
 
@@ -76,5 +79,5 @@ async def reciver(bot):
         except:
             return  # disconnected
         res = unpack(res)
-        print(f'recived {res}')
+        logger.info(f'recived {res}')
         await message.trigger(ws.nurs, ws, res)

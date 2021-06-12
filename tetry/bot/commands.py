@@ -77,3 +77,54 @@ def chat(msg:str, id:int):
         'command': 'chat',
         'data': msg
     }
+
+
+def switchBracket(id:int, bracket:str):
+    return {
+        'id': id,
+        'command': 'switchbracket',
+        'data': bracket
+    }
+
+
+def switchBracketHost(id:int, bracket:str, uid:str):
+    return {
+        'id': id,
+        'command': 'switchbrackethost',
+        'data': {
+            'uid': uid,
+            'bracket': bracket
+        }
+    }
+
+
+def leaveRoom(id, room):
+    return {
+        'id': id,
+        'command': 'leaveroom',
+        'data': room
+    }
+
+
+def transferOwnership(id, uid):
+    return {
+        'id': id,
+        'command': 'transferownership',
+        'data': uid
+    }
+
+
+def kick(id, uid):
+    return {
+        'id': id,
+        'command': 'kick',
+        'data': uid
+    }
+
+
+def startRoom(id):
+    return {
+        'id': id, 
+        'command': 'startroom', 
+        'data': None
+    }

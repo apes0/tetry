@@ -1,13 +1,16 @@
+import logging
 import time
 
 import trio
 from trio_websocket import connect_websocket_url
 
-from .commands import *
-from .room import Room
 from .chatMessage import ChatMessage
+from .commands import *
 from .events import Event
-from .ribbons import conn, connect, message, send, sendEv
+from .ribbons import conn, connect, message, send, sendEv, getInfo
+from .room import Room
+
+logger = logging.getLogger(__name__)
 
 # api docs: https://github.com/Poyo-SSB/tetrio-bot-docs
 
@@ -24,38 +27,12 @@ async def heartbeat(bot):
         try:
             await send(ping, ws)
         except:
-            return # disconnected
+            return  # disconnected
 
 
-async def login(bot):
+async def start(bot):
     await send(new, bot.ws)
-    conn.removeListener(login)
-    message.addListener(resp)
-
-
-async def resp(ws, msg):
-    bot = ws.bot
-    if isinstance(msg, tuple):
-        _ = msg[0]
-        msg = msg[1]
-    if isinstance(msg, bytes):
-        return
-    if isinstance(msg, list):
-        for m in msg:
-            print(m, len(msg))
-            await resp(ws, m)
-            return
-    comm = msg['command']
-    print(comm)
-    if comm == 'hello':
-        bot.sockid = msg['id']
-        bot.resume = msg['resume']
-        await send(authorize(bot.messageId, bot.token, bot.handling), ws)
-    elif comm == 'authorize':
-        await send(presence('online'), ws)
-        await bot.events['ready'].trigger(ws.nurs)
-    elif comm == 'chat':
-        pass
+    conn.removeListener(start)
 
 
 async def reconnect(ws, sockid, resumeToken, nurs, bot):
@@ -63,32 +40,84 @@ async def reconnect(ws, sockid, resumeToken, nurs, bot):
     ws.nurs = nurs
     ws.bot = bot
     bot.ws = ws
-    nurs.start_soon(conn.trigger, nurs, ws)
+    await conn.trigger(nurs, bot)
     await send(resume(sockid, resumeToken), ws)
     await send(hello([message.message for message in bot.messages]), ws)
 
 
 @message.addListener
+async def _msgHandle(ws, msg):
+    await msgHandle(ws, msg)
+
+
 async def msgHandle(ws, msg):
     bot = ws.bot
     nurs = bot.nurs
-    if isinstance(msg, bytes) or isinstance(msg, list):
+    if isinstance(msg, bytes):
         return
-    if isinstance(msg, tuple):
+    elif isinstance(msg, tuple):
         msg = msg[1]
+    if isinstance(msg, list):
+        for m in msg:
+            await msgHandle(ws, m)
+        return
     comm = msg['command']
-    if comm == 'migrate':
+    if 'id' in msg:
+        logServer(msg, ws)
+    logging.info(f'got {comm} command (message: {msg})')
+    if comm == 'hello':
+        bot.sockid = msg['id']
+        bot.resume = msg['resume']
+        messages = msg['packets']
+        seen = [m.message for m in bot.serverMessages]
+        for m in messages:
+            if m not in seen:
+                await msgHandle(ws, m)
+        await send(authorize(bot.messageId, bot.token, bot.handling), ws)
+    elif comm == 'authorize':
+        await send(presence('online'), ws)
+        await bot.events['ready'].trigger(ws.nurs)
+    elif comm == 'migrate':
         await ws.aclose()
         ws = msg['data']['endpoint']
         await reconnect(ws, bot.sockid, bot.resume, bot.nurs, bot)
     elif comm == 'err':
-        raise Exception(msg['data'])
-    elif comm == 'gmupdate':
-        room = Room(msg['data'])
-        bot.room = room
-        await bot.events['joinedRoom'].trigger(nurs, room)
+        logger.error(msg['data'])
+    elif comm.startswith('gmupdate'):
+        coms = comm.split('.')
+        if len(coms) == 1:  # only gmupdate
+            oldRoom = bot.room
+            room = Room(msg['data'], bot)
+            bot.room = room
+            if not oldRoom:
+                await bot.events['joinedRoom'].trigger(nurs, room)
+        else:
+            subcomm = coms[1]
+            if subcomm == 'host':
+                bot.room.owner = msg['data']
+                owner = bot.room.getPlayer(bot.room.owner)
+                await bot.events['changeOwner'].trigger(nurs, owner)
+            elif subcomm == 'bracket':
+                ind = bot.room._getIndex(msg['data']['uid'])
+                bot.room.players[ind]['bracket'] = msg['data']['bracket']
+                await bot.events['changeBracket'].trigger(nurs, bot.room.players[ind])
+            elif subcomm == 'leave':
+                player = bot.room.getPlayer(msg['data'])
+                bot.room.players.remove(player)
+                await bot.events['userLeave'].trigger(nurs, player)
+            elif subcomm == 'join':
+                bot.room.players.append(msg['data'])
+                await bot.events['userJoin'].trigger(nurs, msg['data'])
     elif comm == 'chat':
         await bot.events['message'].trigger(nurs, ChatMessage(msg['data']))
+    elif comm == 'kick':
+        raise BaseException(msg['data']['reason'])
+    elif comm == 'endmulti':
+        bot.room.inGame = False
+        await bot.events['gameEnd'].trigger(nurs)
+    elif comm == 'startmulti':
+        bot.room.inGame = True
+        await bot.events['gameStart'].trigger(nurs)
 
 
 @sendEv.addListener
@@ -97,7 +126,7 @@ async def changeId(msg, ws):
         return
     if 'id' in msg:
         ws.bot.messageId += 1
-        await log(msg, ws)
+        log(msg, ws)
 
 
 class Message:
@@ -109,7 +138,7 @@ class Message:
         return time.time() - self.time >= t
 
 
-async def log(msg, ws):
+def log(msg, ws):
     bot = ws.bot
     messages = bot.messages
     messages.append(Message(msg))
@@ -122,12 +151,34 @@ async def log(msg, ws):
             break
     bot.messages = messages
 
+
+def logServer(msg, ws):
+    bot = ws.bot
+    messages = bot.serverMessages
+    messages.append(Message(msg))
+    logFor = 30  # seconds
+    for message in messages:
+        remove = message.checkTime(logFor)
+        if remove:
+            messages.pop(0)
+        else:
+            break
+    bot.serverMessages = messages
+
 # bot class
+
 
 events = [
     'ready',
     'joinedRoom',
-    'message'
+    'message',
+    'changeBracket',
+    'changeOwner',
+    'userLeave',
+    'userJoin',
+    'leftRoom',
+    'gameStart',
+    'gameEnd',
 ]
 
 
@@ -151,6 +202,8 @@ class Bot:
         }
         self.nurs = None
         self.ws = None
+        self.serverMessages = []
+        self.user = None
         for event in events:
             self.events[event] = Event(event)
 
@@ -165,8 +218,9 @@ class Bot:
         await send(createroom(public, self.messageId), self.ws)
 
     async def _run(self):
+        self.user = getInfo(self.token)
         async with trio.open_nursery() as nurs:
-            conn.addListener(login)
+            conn.addListener(start)
             nurs.start_soon(connect, self, nurs)
             self.nurs = nurs
 
@@ -178,6 +232,3 @@ class Bot:
 
     async def stop(self):
         await send(die, self.ws)
-
-    async def send(self, message):
-        await send(chat(message, self.messageId), self.ws)
