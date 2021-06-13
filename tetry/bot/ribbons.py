@@ -7,7 +7,7 @@ from trio_websocket import connect_websocket_url
 
 from .events import Event
 from .message import pack, unpack
-from .urls import *
+from .urls import me, tetrioJs, ribbon
 
 logger = logging.getLogger(__name__)
 

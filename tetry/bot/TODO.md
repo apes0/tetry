@@ -1,5 +1,6 @@
 
 # bot todo
 
-- add reconnects
-- add migarations
+- socials
+- replays
+- gameplay

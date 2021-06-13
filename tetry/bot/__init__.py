@@ -1,1 +1,1 @@
-from .bot import *
+from .bot import Bot

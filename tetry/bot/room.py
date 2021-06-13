@@ -26,7 +26,7 @@ class Room:
             await send(switchBracketHost(bot.messageId, bracket, uid), ws)
         else:
             await send(switchBracket(bot.messageId, bracket), ws)
-    
+
     async def leave(self):
         bot = self.bot
         await send(leaveRoom(bot.messageId, self.id), bot.ws)
@@ -34,22 +34,22 @@ class Room:
 
     def getPlayer(self, id):
         return self.players[self._getIndex(id)]
-    
+
     def _getIndex(self, id):
         players = self.players
         for i in range(len(players)):
             player = players[i]
             if player['_id'] == id:
                 return i
-    
+
     async def makeOwner(self, uid):
         await send(transferOwnership(self.bot.messageId, uid), self.bot.ws)
-    
+
     async def kickUser(self, uid):
         await send(kick(self.bot.messageId, uid), self.bot.ws)
-    
+
     async def startGame(self):
         await send(startRoom(self.bot.messageId), self.bot.ws)
-    
+
     async def send(self, message):
         await send(chat(message, self.bot.messageId), self.bot.ws)

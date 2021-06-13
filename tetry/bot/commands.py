@@ -5,7 +5,7 @@ new = {
 }
 
 
-def authorize(msgid:int, token:str, handling:dict):
+def authorize(msgid: int, token: str, handling: dict):
     return {
         'id': msgid,
         'command': 'authorize',
@@ -28,7 +28,7 @@ die = {
 ping = b'\x0B'
 
 
-def presence(status:str, detail:str=''):
+def presence(status: str, detail: str = ''):
     return {
         'command': 'social.presence',
         'status': status,
@@ -36,7 +36,7 @@ def presence(status:str, detail:str=''):
     }
 
 
-def joinroom(room:str, id:int):
+def joinroom(room: str, id: int):
     return {
         'id': id,
         'command': 'joinroom',
@@ -44,7 +44,7 @@ def joinroom(room:str, id:int):
     }
 
 
-def createroom(public: bool, id:int):
+def createroom(public: bool, id: int):
     if public:
         public = 'public'
     else:
@@ -56,7 +56,7 @@ def createroom(public: bool, id:int):
     }
 
 
-def resume(sockId:str, resume:str):
+def resume(sockId: str, resume: str):
     return {
         'command': 'resume',
         'socketid': sockId,
@@ -64,14 +64,14 @@ def resume(sockId:str, resume:str):
     }
 
 
-def hello(msgs:list):
+def hello(msgs: list):
     return {
         'command': 'hello',
         'packets': msgs
     }
 
 
-def chat(msg:str, id:int):
+def chat(msg: str, id: int):
     return {
         'id': id,
         'command': 'chat',
@@ -79,7 +79,7 @@ def chat(msg:str, id:int):
     }
 
 
-def switchBracket(id:int, bracket:str):
+def switchBracket(id: int, bracket: str):
     return {
         'id': id,
         'command': 'switchbracket',
@@ -87,7 +87,7 @@ def switchBracket(id:int, bracket:str):
     }
 
 
-def switchBracketHost(id:int, bracket:str, uid:str):
+def switchBracketHost(id: int, bracket: str, uid: str):
     return {
         'id': id,
         'command': 'switchbrackethost',
@@ -124,7 +124,7 @@ def kick(id, uid):
 
 def startRoom(id):
     return {
-        'id': id, 
-        'command': 'startroom', 
+        'id': id,
+        'command': 'startroom',
         'data': None
     }

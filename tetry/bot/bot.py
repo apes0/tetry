@@ -5,7 +5,7 @@ import trio
 from trio_websocket import connect_websocket_url
 
 from .chatMessage import ChatMessage
-from .commands import *
+from .commands import new, resume, hello, authorize, presence, joinroom, createroom, ping, die
 from .events import Event
 from .ribbons import conn, connect, message, send, sendEv, getInfo
 from .room import Room

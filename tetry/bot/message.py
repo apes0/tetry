@@ -4,6 +4,7 @@ import msgpack
 
 # packer
 
+
 def standartId(data):
     prefix = b'\x45'
     return prefix + msgpack.packb(data)
