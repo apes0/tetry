@@ -9,6 +9,7 @@ from .commands import new, resume, hello, authorize, presence, joinroom, creater
 from .events import Event
 from .ribbons import conn, connect, message, send, sendEv, getInfo
 from .room import Room
+from .frame import Frame
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ async def reconnect(ws, sockid, resumeToken, nurs, bot):
 @message.addListener
 async def _msgHandle(ws, msg):
     await msgHandle(ws, msg)
+    print(msg)
 
 
 async def msgHandle(ws, msg):
@@ -64,7 +66,7 @@ async def msgHandle(ws, msg):
     comm = msg['command']
     if 'id' in msg:
         logServer(msg, ws)
-    logging.info(f'got {comm} command (message: {msg})')
+    logging.info(f'got {comm} command')
     if comm == 'hello':
         bot.sockid = msg['id']
         bot.resume = msg['resume']
@@ -118,6 +120,12 @@ async def msgHandle(ws, msg):
     elif comm == 'startmulti':
         bot.room.inGame = True
         await bot.events['gameStart'].trigger(nurs)
+    elif comm == 'replay':
+        for f in msg['data']['frames']:
+            fr = Frame(f)
+            if fr.type == 'start':
+                bot.room.listenId = msg['data']['listenID']
+                bot.room.startTime = time.time()
 
 
 @sendEv.addListener
@@ -219,6 +227,9 @@ class Bot:
 
     async def _run(self):
         self.user = getInfo(self.token)
+        if self.user['role'] != 'bot':
+            raise BaseException(
+                'Your account is not a bot account, ask tetrio support for a bot account!')
         async with trio.open_nursery() as nurs:
             conn.addListener(start)
             nurs.start_soon(connect, self, nurs)

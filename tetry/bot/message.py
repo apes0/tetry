@@ -11,9 +11,16 @@ def standartId(data):
 
 
 def batchTag(data):
-    prefix = b'\x58'
-    # struckt pack with !I
-    return prefix + msgpack.packb(data)
+    msg = b'\x58'
+    msgs = []
+    for m in data:
+        packed = pack(m)
+        msg += struct.pack('!I', len(packed))
+        msgs.append(packed)
+    msg += b'\x00\x00\x00\x00'
+    for m in msgs:
+        msg += m
+    return msg
 
 
 def extensionTag(data):

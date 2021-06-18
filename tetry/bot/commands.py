@@ -128,3 +128,13 @@ def startRoom(id):
         'command': 'startroom',
         'data': None
     }
+
+
+def replay(id, frames, listenId, frame):
+    return {
+        'command': 'replay',
+        'data': {'frames': frames,
+                 'listenID': listenId,
+                 'provisioned': frame},
+        'id': id
+    }

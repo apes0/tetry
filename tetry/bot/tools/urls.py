@@ -1,1 +1,0 @@
-anonJoin = 'https://tetr.io/api/users/anonymousJoin'
