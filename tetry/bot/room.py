@@ -1,7 +1,7 @@
 import time
 import math
 
-from .commands import switchBracket, switchBracketHost, replay, leaveRoom, chat, transferOwnership, kick, startRoom
+from .commands import switchBracket, switchBracketHost, updateConfig, replay, leaveRoom, chat, transferOwnership, kick, startRoom
 from .ribbons import send
 from .urls import room
 
@@ -59,8 +59,39 @@ class Room:
     async def send(self, message):
         await send(chat(message, self.bot.messageId), self.bot.ws)
 
-    def getFrame(self):
+    async def updateConfig(self, data):
+        await send(updateConfig(self.bot.messageId, data), self.bot.ws)
+
+    def getFrame(self):  # for gameplay stuff which i cannot figure out yet :p
         t = time.time()
         passed = t - self.startTime
         frame = passed*60
-        return {'frame': math.floor(frame), 'subframe': frame % 1}
+        return {'frame': math.ceil(frame), 'subframe': frame % 1}
+
+    def getBots(self):
+        res = []
+        for u in self.players:
+            if u['bot']:
+                res.append(u)
+        return res
+
+    def getAnons(self):
+        res = []
+        for u in self.players:
+            if u['anon']:
+                res.append(u)
+        return res
+
+    def getSpectators(self):
+        res = []
+        for u in self.players:
+            if u['bracket'] == 'spectator':
+                res.append(u)
+        return res
+
+    def getPlaying(self):
+        res = []
+        for u in self.players:
+            if u['bracket'] == 'player':
+                res.append(u)
+        return res

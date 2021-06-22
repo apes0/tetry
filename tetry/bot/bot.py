@@ -1,5 +1,6 @@
 import logging
 import time
+import copy
 
 import trio
 from trio_websocket import connect_websocket_url
@@ -10,6 +11,7 @@ from .events import Event
 from .ribbons import conn, connect, message, send, sendEv, getInfo
 from .room import Room
 from .frame import Frame
+from .chatCommands import commandBot
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,7 @@ async def heartbeat(bot):
         await trio.sleep(d)
         try:
             await send(ping, ws)
+            bot.lastPing = time.time()
         except:
             return  # disconnected
 
@@ -48,13 +51,18 @@ async def reconnect(ws, sockid, resumeToken, nurs, bot):
 
 @message.addListener
 async def _msgHandle(ws, msg):
+    # ping
+    if msg == b'\x0c':
+        bot = ws.bot
+        ping = time.time() - bot.lastPing
+        bot.ping = ping
+        await bot._trigger('pinged', ping)
     await msgHandle(ws, msg)
     print(msg)
 
 
 async def msgHandle(ws, msg):
     bot = ws.bot
-    nurs = bot.nurs
     if isinstance(msg, bytes):
         return
     elif isinstance(msg, tuple):
@@ -78,7 +86,7 @@ async def msgHandle(ws, msg):
         await send(authorize(bot.messageId, bot.token, bot.handling), ws)
     elif comm == 'authorize':
         await send(presence('online'), ws)
-        await bot.events['ready'].trigger(ws.nurs)
+        await bot._trigger('ready')
     elif comm == 'migrate':
         await ws.aclose()
         ws = msg['data']['endpoint']
@@ -92,34 +100,34 @@ async def msgHandle(ws, msg):
             room = Room(msg['data'], bot)
             bot.room = room
             if not oldRoom:
-                await bot.events['joinedRoom'].trigger(nurs, room)
+                await bot._trigger('joinedRoom', room)
         else:
             subcomm = coms[1]
             if subcomm == 'host':
                 bot.room.owner = msg['data']
                 owner = bot.room.getPlayer(bot.room.owner)
-                await bot.events['changeOwner'].trigger(nurs, owner)
+                await bot._trigger('changeOwner', owner)
             elif subcomm == 'bracket':
                 ind = bot.room._getIndex(msg['data']['uid'])
                 bot.room.players[ind]['bracket'] = msg['data']['bracket']
-                await bot.events['changeBracket'].trigger(nurs, bot.room.players[ind])
+                await bot._trigger('changeBracket', bot.room.players[ind])
             elif subcomm == 'leave':
                 player = bot.room.getPlayer(msg['data'])
                 bot.room.players.remove(player)
-                await bot.events['userLeave'].trigger(nurs, player)
+                await bot._trigger('userLeave', player)
             elif subcomm == 'join':
                 bot.room.players.append(msg['data'])
-                await bot.events['userJoin'].trigger(nurs, msg['data'])
+                await bot._trigger('userJoin', msg['data'])
     elif comm == 'chat':
-        await bot.events['message'].trigger(nurs, ChatMessage(msg['data']))
+        await bot._trigger('message', ChatMessage(msg['data']))
     elif comm == 'kick':
         raise BaseException(msg['data']['reason'])
     elif comm == 'endmulti':
         bot.room.inGame = False
-        await bot.events['gameEnd'].trigger(nurs)
+        await bot._trigger('gameEnd')
     elif comm == 'startmulti':
         bot.room.inGame = True
-        await bot.events['gameStart'].trigger(nurs)
+        await bot._trigger('gameStart')
     elif comm == 'replay':
         for f in msg['data']['frames']:
             fr = Frame(f)
@@ -187,11 +195,12 @@ events = [
     'leftRoom',
     'gameStart',
     'gameEnd',
+    'pinged',
 ]
 
 
 class Bot:
-    def __init__(self, token):
+    def __init__(self, token, commandPrefix='!'):
         self.token = token
         self.room = None
         self.messageId = 0
@@ -214,6 +223,9 @@ class Bot:
         self.user = None
         for event in events:
             self.events[event] = Event(event)
+        self.ping = 0  # seconds
+        self.lastPing = None
+        self.commandBot = commandBot(self, commandPrefix)
 
     def run(self):
         trio.run(self._run)
@@ -235,11 +247,20 @@ class Bot:
             nurs.start_soon(connect, self, nurs)
             self.nurs = nurs
 
+    async def _trigger(self, event, *args):
+        await self.events[event].trigger(self.nurs, *args)
+
     def event(self, func):  # event decorator
         name = func.__name__
         if name.startswith('on_'):
             name = name[3:]
         self.events[name].addListener(func)
 
+    def chatCommand(self, func):
+        self.commandBot.register(func)
+
     async def stop(self):
         await send(die, self.ws)
+
+    def copy(self):
+        return copy.deepcopy(self)

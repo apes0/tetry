@@ -130,6 +130,14 @@ def startRoom(id):
     }
 
 
+def updateConfig(id, data):
+    return {
+        'id': id,
+        'command': 'updateconfig',
+        'data': data
+    }
+
+
 def replay(id, frames, listenId, frame):
     return {
         'command': 'replay',
