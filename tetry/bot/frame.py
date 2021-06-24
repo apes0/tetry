@@ -5,6 +5,6 @@ class Frame:
         if self.type in ['keydown', 'keyup']:
             self.key = data['data']['key']
             self.subframe = data['data']['subframe']
-        else:
+        else:  # no subframe for other events
             self.frame = data['frame']
             self.subframe = 0

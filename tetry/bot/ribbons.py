@@ -31,7 +31,7 @@ async def send(data, ws):
 
 
 def getInfo(token):
-    headers = {'authorization': f'Bearer {token}'}
+    headers = {'authorization': f'Bearer {token}'}  # oauth header
     res = requests.get(me, headers=headers)
     json = res.json()
     if json['success']:
@@ -41,11 +41,11 @@ def getInfo(token):
 
 
 def getRibbon(token):
-    headers = {'authorization': f'Bearer {token}'}
+    headers = {'authorization': f'Bearer {token}'}  # oauth header
     res = requests.get(ribbon, headers=headers)
     json = res.json()
     if json['success']:
-        return json['endpoint']
+        return json['endpoint']  # endpoint from the api
     else:
         raise BaseException(json['errors'][0]['msg'])
 
@@ -60,12 +60,11 @@ conn = Event('conn')
 async def connect(bot, nurs):
     token = bot.token
     ribbon = getRibbon(token)
-    ws = await connect_websocket_url(nurs, ribbon)
+    ws = await connect_websocket_url(nurs, ribbon)  # connect to ribbon
     ws.nurs = nurs
     ws.bot = bot
     bot.ws = ws
     nurs.start_soon(conn.trigger, nurs, bot)
-    await trio.sleep_forever()
 
 message = Event('message')
 

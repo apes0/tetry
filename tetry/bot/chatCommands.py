@@ -11,22 +11,22 @@ class commandBot:
 
     async def commandParser(self, msg):
         text = msg.content
-        if text.startswith(self.prefix):
-            text = text[len(self.prefix):]
-            comm = text.split(' ')
-            args = [msg]
+        if text.startswith(self.prefix):  # check if the message is a command
+            text = text[len(self.prefix):]  # get the command
+            comm = text.split(' ')  # get a list of the args
+            args = [msg]  # function args
             if len(comm) > 1:
-                args += comm[1:]
-            comm = comm[0]
+                args += comm[1:]  # add all command args if we have any
+            comm = comm[0]  # get command name
             nurs = self.bot.nurs
-            if comm in self.commands:
+            if comm in self.commands:  # check if we have a real command
                 await self.commands[comm].trigger(nurs, *args)
 
     def register(self, func):
         name = func.__name__
-        event = Event(name)
-        event.addListener(func)
-        if name not in self.commands:
+        if name not in self.commands:  # add the func as a listener if the command exists, else make an event for it
+            event = Event(name)  # create an event for the command
+            event.addListener(func)
             self.commands[name] = event
         else:
             self.commands[name].addListener(func)
