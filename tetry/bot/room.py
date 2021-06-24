@@ -17,8 +17,8 @@ class Room:
         self.players = data['players']
         self.invite = room + self.id
         self.bot = bot
-        self.bracket = 'player'
-        self.inGame = False
+        self.bracket = 'spectator'  # defualt bracket for bots only
+        self.inGame = self.state == 'ingame'
         self.listenId = None
         self.startTime = 0
 

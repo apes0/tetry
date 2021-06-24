@@ -1,6 +1,7 @@
 import logging
 import time
 import copy
+import requests
 
 import trio
 from trio_websocket import connect_websocket_url
@@ -12,6 +13,7 @@ from .ribbons import conn, connect, message, send, sendEv, getInfo
 from .room import Room
 from .frame import Frame
 from .chatCommands import commandBot
+from .urls import rooms
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +59,7 @@ async def _msgHandle(ws, msg):
         await bot._trigger('pinged', ping)
         return
     await msgHandle(ws, msg)
-    print(msg)
+#    print(msg)
 
 
 async def msgHandle(ws, msg):
@@ -71,7 +73,7 @@ async def msgHandle(ws, msg):
     comm = msg['command']
     if 'id' in msg:  # log id'ed messages
         logServer(msg, ws)
-    logging.info(f'got {comm} command')
+    logger.info(f'got {comm} command')
     if comm == 'hello':
         bot.sockid = msg['id']
         bot.resume = msg['resume']
@@ -264,6 +266,14 @@ class Bot:
 
     async def stop(self):
         await send(die, self.ws)  # die message
+
+    def getRooms(self):
+        headers = {'authorization': f'Bearer {self.token}'}
+        json = requests.get(rooms, headers=headers).json()
+        if json['success']:
+            return json['rooms']
+        else:
+            return json['errors'][0]['msg']
 
     def copy(self):
         return copy.deepcopy(self)  # make a deep copy of this class
