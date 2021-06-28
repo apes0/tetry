@@ -1,18 +1,20 @@
+import copy
 import logging
 import time
-import copy
-import requests
 
+import requests
 import trio
 from trio_websocket import connect_websocket_url
 
-from .chatMessage import ChatMessage
-from .commands import new, resume, hello, authorize, presence, joinroom, createroom, ping, die
-from .events import Event
-from .ribbons import conn, connect, message, send, sendEv, getInfo
-from .room import Room
-from .frame import Frame
 from .chatCommands import commandBot
+from .chatMessage import ChatMessage
+from .commands import (authorize, createroom, die, hello, joinroom, new, ping,
+                       presence, resume)
+from .events import Event
+from .frame import Frame
+from .game import Game
+from .ribbons import conn, connect, getInfo, message, send, sendEv
+from .room import Room
 from .urls import rooms
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,7 @@ async def msgHandle(ws, msg):
             await msgHandle(ws, m)
         return
     comm = msg['command']
+#    print(comm)
     if 'id' in msg:  # log id'ed messages
         logServer(msg, ws)
     logger.info(f'got {comm} command')
@@ -123,6 +126,8 @@ async def msgHandle(ws, msg):
         await bot._trigger('message', ChatMessage(msg['data']))
     elif comm == 'kick':  # kick message, sent only when there is a fatal error, similar to nope
         raise BaseException(msg['data']['reason'])
+    elif comm == 'nope':
+        raise BaseException(msg['data']['reason'])
     elif comm == 'endmulti':  # end of game
         bot.room.inGame = False
         await bot._trigger('gameEnd')
@@ -132,9 +137,12 @@ async def msgHandle(ws, msg):
     elif comm == 'replay':  # replay message
         for f in msg['data']['frames']:  # go through every frame
             fr = Frame(f)  # make a frame object
-            if fr.type == 'start':  # if the type is 'start' change the bot listenId and note the time the game has started
-                bot.room.listenId = msg['data']['listenID']
-                bot.room.startTime = time.time()
+            if fr.type == 'start':
+                await bot._trigger('playing', bot.room)
+                await bot.room.game.start()
+            # nothing else currently, TODO: implement this
+    elif comm == 'readymulti':  # data for the game before it starts
+        bot.room.game = Game(msg['data'], bot)
 
 
 @sendEv.addListener
@@ -199,6 +207,7 @@ events = [
     'gameStart',
     'gameEnd',  # called when the game ends (endmulti message)
     'pinged',  # called for every ping measurment
+    'playing',  # called when you can play
 ]
 
 
@@ -230,6 +239,8 @@ class Bot:
         self.lastPing = None
         # command bot for chat commands
         self.commandBot = commandBot(self, commandPrefix)
+        self.name = None
+        self.id = None
 
     def run(self):
         trio.run(self._run)
@@ -244,6 +255,8 @@ class Bot:
 
     async def _run(self):
         self.user = getInfo(self.token)  # get info for the current user
+        self.name = self.user['username']
+        self.id = self.user['_id']
         if self.user['role'] != 'bot':  # check if we aren't running on a bot account
             raise BaseException(
                 'Your account is not a bot account, ask tetr.io support (support@tetr.io) for a bot account!')

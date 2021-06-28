@@ -1,7 +1,5 @@
-import time
-import math
-
-from .commands import switchBracket, switchBracketHost, updateConfig, replay, leaveRoom, chat, transferOwnership, kick, startRoom
+from .commands import (chat, kick, leaveRoom, startRoom, switchBracket,
+                       switchBracketHost, transferOwnership, updateConfig)
 from .ribbons import send
 from .urls import room
 
@@ -19,8 +17,7 @@ class Room:
         self.bot = bot
         self.bracket = 'spectator'  # defualt bracket for bots only
         self.inGame = self.state == 'ingame'
-        self.listenId = None
-        self.startTime = 0
+        self.game = None
 
     async def switchBracket(self, playing: bool, uid=None):
         bracket = ['spectator', 'player'][playing]
@@ -61,12 +58,6 @@ class Room:
 
     async def updateConfig(self, data):
         await send(updateConfig(self.bot.messageId, data), self.bot.ws)
-
-    def getFrame(self):  # for gameplay stuff which i cannot figure out yet :p
-        t = time.time()
-        passed = t - self.startTime
-        frame = passed*60
-        return {'frame': math.ceil(frame), 'subframe': frame % 1}
 
     def getBots(self):
         res = []

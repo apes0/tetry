@@ -1,5 +1,4 @@
 import logging
-import re
 
 import requests
 import trio
@@ -7,17 +6,14 @@ from trio_websocket import connect_websocket_url
 
 from .events import Event
 from .message import pack, unpack
-from .urls import me, tetrioJs, ribbon
+from .urls import enviorment, me, ribbon
 
 logger = logging.getLogger(__name__)
 
 
 def getCommit():
-    regex = '"commit":{"id":"([0-9a-fA-F]*)"'
-    # get only the first 1000 bytes from tetrio
-    headers = {"Range": "bytes=0-1000"}
-    text = requests.get(tetrioJs, headers=headers).text
-    return re.search(regex, text).group(1)
+    json = requests.get(enviorment).json()
+    return json['signature']['commit']['id']
 
 
 sendEv = Event('sendEv')
@@ -25,7 +21,9 @@ sendEv = Event('sendEv')
 
 async def send(data, ws):
     await sendEv.trigger(ws.nurs, data, ws)
+#    print(data)
     data = pack(data)
+#    print(data)
     await ws.send_message(data)
     logger.info(f'sent {data}')
 
