@@ -76,5 +76,6 @@ async def reciver(bot):
         except:
             return  # disconnected
         res = unpack(res)
+#        print(res)
         logger.info(f'recived {res}')
         await message.trigger(ws.nurs, ws, res)

@@ -28,11 +28,14 @@ die = {
 ping = b'\x0B'
 
 
-def presence(status: str, detail: str = ''):
+def presence(id, status: str, detail: str):
     return {
         'command': 'social.presence',
-        'status': status,
-        'detail': detail
+        'id': id,
+        'data': {
+            'status': status,
+            'detail': detail
+        }
     }
 
 
@@ -98,11 +101,11 @@ def switchBracketHost(id: int, bracket: str, uid: str):
     }
 
 
-def leaveRoom(id, room):
+def leaveRoom(id):
     return {
         'id': id,
         'command': 'leaveroom',
-        'data': room
+        'data': {}
     }
 
 
@@ -145,4 +148,12 @@ def replay(id, frames, listenId, frame):
                  'listenID': listenId,
                  'provisioned': frame},
         'id': id
+    }
+
+
+def invite(id, uid):
+    return {
+        'id': id,
+        'command': 'social.invite',
+        'data': uid
     }

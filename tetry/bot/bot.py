@@ -8,11 +8,12 @@ from trio_websocket import connect_websocket_url
 
 from .chatCommands import commandBot
 from .chatMessage import ChatMessage
-from .commands import (authorize, createroom, die, hello, joinroom, new, ping,
-                       presence, resume)
+from .commands import (authorize, createroom, die, hello, invite, joinroom,
+                       leaveRoom, new, ping, presence, resume)
 from .events import Event
 from .frame import Frame
 from .game import Game
+from .invite import Invite
 from .ribbons import conn, connect, getInfo, message, send, sendEv
 from .room import Room
 from .urls import rooms
@@ -89,7 +90,7 @@ async def msgHandle(ws, msg):
         # authorize message
         await send(authorize(bot.messageId, bot.token, bot.handling), ws)
     elif comm == 'authorize':
-        await send(presence('online'), ws)  # set the presence
+        await bot.setPresence('online')  # set the presence
         await bot._trigger('ready')
     elif comm == 'migrate':
         await ws.aclose()  # close the connection to the websocket
@@ -143,6 +144,15 @@ async def msgHandle(ws, msg):
             # nothing else currently, TODO: implement this
     elif comm == 'readymulti':  # data for the game before it starts
         bot.room.game = Game(msg['data'], bot)
+    elif comm.startswith('social'):
+        coms = comm.split('.')  # command and its subcommands
+        subcomm = coms[1]
+        if subcomm == 'invite':
+            print('a')
+            await bot._trigger('invited', Invite(msg['data'], bot))
+    elif comm == 'leaveroom':
+        bot.room = None
+        await bot._trigger('leftRoom', msg['data'])
 
 
 @sendEv.addListener
@@ -208,6 +218,7 @@ events = [
     'gameEnd',  # called when the game ends (endmulti message)
     'pinged',  # called for every ping measurment
     'playing',  # called when you can play
+    'invited',  # called when you get invited to join a room, you can accept or ignore the invite
 ]
 
 
@@ -253,6 +264,9 @@ class Bot:
         # createroom message
         await send(createroom(public, self.messageId), self.ws)
 
+    async def leaveRoom(self):
+        await send(leaveRoom(self.messageId), self.ws)
+
     async def _run(self):
         self.user = getInfo(self.token)  # get info for the current user
         self.name = self.user['username']
@@ -279,6 +293,12 @@ class Bot:
 
     async def stop(self):
         await send(die, self.ws)  # die message
+
+    async def invite(self, uid):
+        await send(invite(self.messageId, uid), self.ws)  # die message
+
+    async def setPresence(self, status, detail=''):
+        await send(presence(self.messageId, status, detail), self.ws)
 
     def getRooms(self):
         headers = {'authorization': f'Bearer {self.token}'}

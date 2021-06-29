@@ -5,6 +5,8 @@ import trio
 from .commands import replay
 from .ribbons import send
 
+minoTypes = ["z", "l", "o", "s", "i", "j", "t"]  # TODO: park miller prng
+
 
 class Game:
     def __init__(self, data, bot):
@@ -23,7 +25,7 @@ class Game:
         frame = passed*60
         return {'frame': math.floor(frame), 'subframe': frame % 1}
 
-    async def press(self, key):
+    def press(self, key):
         f = self.getFrame()
         frame = f['frame']
         subframe = f['subframe']
@@ -35,14 +37,20 @@ class Game:
                  }
         self.pending.append(frame)
 
+    def _sendStart(self):
+        frame = {
+            'frame': 0,
+            'type': 'start',
+            'data': {}
+        }
+        self.pending.append(frame)
+
     async def start(self):
         t = trio.current_time()
         self.startTime = t
         d = 30  # frames
         frame = 0  # frames
-        print('started')
         while self.bot.room.inGame:
-            print('sent frame')
             t += d/60
             frame += d
             await trio.sleep_until(t)
