@@ -4,18 +4,13 @@ import time
 
 import requests
 import trio
-from trio_websocket import connect_websocket_url
 
+from . import responses
 from .chatCommands import commandBot
-from .chatMessage import ChatMessage
-from .commands import (authorize, createroom, die, hello, invite, joinroom,
-                       leaveRoom, new, ping, presence, removeFriend, resume)
+from .commands import (createroom, die, invite, joinroom, leaveRoom, new, ping,
+                       presence, removeFriend)
 from .events import Event
-from .frame import Frame
-from .game import Game
-from .invite import Invite
 from .ribbons import conn, connect, getInfo, message, send, sendEv
-from .room import Room
 from .urls import rooms
 
 logger = logging.getLogger(__name__)
@@ -40,17 +35,6 @@ async def heartbeat(bot):
 async def start(bot):
     await send(new, bot.ws)
     conn.removeListener(start)
-
-
-async def reconnect(ws, sockid, resumeToken, nurs, bot):
-    ws = await connect_websocket_url(nurs, ws)
-    ws.nurs = nurs
-    ws.bot = bot
-    bot.ws = ws
-    await conn.trigger(nurs, bot)
-    await send(resume(sockid, resumeToken), ws)  # resume message
-    # hello message
-    await send(hello([message.message for message in bot.messages]), ws)
 
 
 @message.addListener
@@ -78,81 +62,14 @@ async def msgHandle(ws, msg):
     if 'id' in msg:  # log id'ed messages
         logServer(msg, ws)
     logger.info(f'got {comm} command')
-    if comm == 'hello':
-        bot.sockid = msg['id']
-        bot.resume = msg['resume']
-        messages = msg['packets']
-        # get the raw json for the seen messages
-        seen = [m.message for m in bot.serverMessages]
-        for m in messages:
-            if m not in seen:
-                await msgHandle(ws, m)  # handle every unseen message
-        # authorize message
-        await send(authorize(bot.messageId, bot.token, bot.handling), ws)
-    elif comm == 'authorize':
-        await bot.setPresence('online')  # set the presence
-        await bot._trigger('ready')
-    elif comm == 'migrate':
-        await ws.aclose()  # close the connection to the websocket
-        ws = msg['data']['endpoint']  # get the new endpoint
-        await reconnect(ws, bot.sockid, bot.resume, bot.nurs, bot)  # reconnect
-    elif comm == 'err':
-        logger.error(msg['data'])  # log the error
-    elif comm.startswith('gmupdate'):
-        coms = comm.split('.')  # command and its subcommands
-        if len(coms) == 1:  # only gmupdate
-            oldRoom = bot.room
-            room = Room(msg['data'], bot)  # create a new room object
-            bot.room = room
-            if not oldRoom:  # trigger the joined room event if the room was of None type
-                await bot._trigger('joinedRoom', room)
-        else:
-            subcomm = coms[1]
-            if subcomm == 'host':  # changed host
-                bot.room.owner = msg['data']
-                owner = bot.room.getPlayer(bot.room.owner)
-                await bot._trigger('changeOwner', owner)
-            elif subcomm == 'bracket':  # bracket change
-                ind = bot.room._getIndex(msg['data']['uid'])
-                bot.room.players[ind]['bracket'] = msg['data']['bracket']
-                await bot._trigger('changeBracket', bot.room.players[ind])
-            elif subcomm == 'leave':  # player leaving
-                player = bot.room.getPlayer(msg['data'])
-                bot.room.players.remove(player)
-                await bot._trigger('userLeave', player)
-            elif subcomm == 'join':  # player joining
-                bot.room.players.append(msg['data'])
-                await bot._trigger('userJoin', msg['data'])
-    elif comm == 'chat':  # chat messages
-        await bot._trigger('message', ChatMessage(msg['data']))
-    elif comm == 'kick':  # kick message, sent only when there is a fatal error, similar to nope
-        raise BaseException(msg['data']['reason'])
-    elif comm == 'nope':
-        raise BaseException(msg['data']['reason'])
-    elif comm == 'endmulti':  # end of game
-        bot.room.inGame = False
-        await bot._trigger('gameEnd')
-    elif comm == 'startmulti':  # start of game
-        bot.room.inGame = True
-        await bot._trigger('gameStart')
-    elif comm == 'replay':  # replay message
-        for f in msg['data']['frames']:  # go through every frame
-            fr = Frame(f)  # make a frame object
-            if fr.type == 'start':
-                await bot._trigger('playing', bot.room)
-                await bot.room.game.start()
-            # nothing else currently, TODO: implement this
-    elif comm == 'readymulti':  # data for the game before it starts
-        bot.room.game = Game(msg['data'], bot)
-    elif comm.startswith('social'):
-        coms = comm.split('.')  # command and its subcommands
-        subcomm = coms[1]
-        if subcomm == 'invite':
-            print('a')
-            await bot._trigger('invited', Invite(msg['data'], bot))
-    elif comm == 'leaveroom':
-        bot.room = None
-        await bot._trigger('leftRoom', msg['data'])
+    if comm not in responses.__dict__:
+        return
+    func = responses.__dict__[comm]
+    if 'caller' in func.__code__.co_varnames:
+        args = (bot, msg, msgHandle)
+    else:
+        args = (bot, msg)
+    await func(*args)
 
 
 @sendEv.addListener
