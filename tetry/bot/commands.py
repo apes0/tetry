@@ -157,3 +157,11 @@ def invite(id, uid):
         'command': 'social.invite',
         'data': uid
     }
+
+
+def removeFriend(id, uid):
+    return {
+        'command': 'social.relationships.remove',
+        'id': id,
+        'data': uid
+    }

@@ -9,7 +9,7 @@ from trio_websocket import connect_websocket_url
 from .chatCommands import commandBot
 from .chatMessage import ChatMessage
 from .commands import (authorize, createroom, die, hello, invite, joinroom,
-                       leaveRoom, new, ping, presence, resume)
+                       leaveRoom, new, ping, presence, removeFriend, resume)
 from .events import Event
 from .frame import Frame
 from .game import Game
@@ -296,6 +296,9 @@ class Bot:
 
     async def invite(self, uid):
         await send(invite(self.messageId, uid), self.ws)  # die message
+
+    async def removeFriend(self, uid):
+        await send(removeFriend(self.messageId, uid), self.ws)  # die message
 
     async def setPresence(self, status, detail=''):
         await send(presence(self.messageId, status, detail), self.ws)

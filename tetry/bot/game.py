@@ -3,9 +3,8 @@ import math
 import trio
 
 from .commands import replay
+from .pieceRng import Rng
 from .ribbons import send
-
-minoTypes = ["z", "l", "o", "s", "i", "j", "t"]  # TODO: park miller prng
 
 
 class Game:
@@ -37,11 +36,13 @@ class Game:
                  }
         self.pending.append(frame)
 
-    def _sendStart(self):
+    def _start(self):  # send a full frame
         frame = {
+            'data': {
+
+            },
             'frame': 0,
-            'type': 'start',
-            'data': {}
+            'type': 'full'
         }
         self.pending.append(frame)
 
@@ -50,6 +51,7 @@ class Game:
         self.startTime = t
         d = 30  # frames
         frame = 0  # frames
+        self._start()
         while self.bot.room.inGame:
             t += d/60
             frame += d
