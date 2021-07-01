@@ -6,6 +6,7 @@ from .chatMessage import ChatMessage
 from .commands import authorize as _authorize
 from .commands import hello as _hello
 from .commands import resume
+from .dm import Dm
 from .frame import Frame
 from .game import Game
 from .invite import Invite
@@ -124,9 +125,13 @@ async def readymulti(bot, msg, _caller):  # data for the game before it starts
 async def social(bot, msg, _caller):
     comm = msg['command']
     coms = comm.split('.')  # command and its subcommands
-    subcomm = coms[1]
+    subcomm = ''.join(coms[1:])
     if subcomm == 'invite':
         await bot._trigger('invited', Invite(msg['data'], bot))
+    elif subcomm == 'online':
+        bot.onlineUsers = msg['data']
+    elif subcomm == 'dm':
+        await bot._trigger('dm', Dm(msg['data']))
 
 
 async def leaveroom(bot, msg, _caller):

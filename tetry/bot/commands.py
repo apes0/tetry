@@ -165,3 +165,14 @@ def removeFriend(id, uid):
         'id': id,
         'data': uid
     }
+
+
+def dm(id, uid, msg):
+    return {
+        'id': id,
+        'command': 'social.dm',
+        'data': {
+            'recipient': uid,
+            'msg': msg
+        }
+    }

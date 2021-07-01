@@ -7,11 +7,12 @@ import trio
 
 from . import responses
 from .chatCommands import commandBot
-from .commands import (createroom, die, invite, joinroom, leaveRoom, new, ping,
+from .commands import (createroom, die, dm, invite, joinroom, new, ping,
                        presence, removeFriend)
+from .dm import Dm
 from .events import Event
 from .ribbons import conn, connect, getInfo, message, send, sendEv
-from .urls import rooms
+from .urls import dms, rooms
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +134,7 @@ events = [
     'pinged',  # called for every ping measurment
     'playing',  # called when you can play
     'invited',  # called when you get invited to join a room, you can accept or ignore the invite
+    'dm',  # called when you get a dm
 ]
 
 
@@ -167,6 +169,7 @@ class Bot:
         self.name = None
         self.id = None
         self.loggedIn = False
+        self.onlineUsers = 0
 
     def run(self):
         trio.run(self._run)
@@ -206,6 +209,9 @@ class Bot:
     async def stop(self):
         await send(die, self.ws)  # die message
 
+    async def dm(self, uid, msg):
+        await send(dm(self.messageId, uid, msg), self.ws)  # die message
+
     async def invite(self, uid):
         await send(invite(self.messageId, uid), self.ws)  # die message
 
@@ -215,13 +221,22 @@ class Bot:
     async def setPresence(self, status, detail=''):
         await send(presence(self.messageId, status, detail), self.ws)
 
+    def getDms(self, uid):
+        res = []
+        headers = {'authorization': f'Bearer {self.token}'}
+        _dms = requests.get(dms + uid, headers=headers).json()
+        if not _dms['success']:
+            raise _dms['errors'][0]['msg']
+        for d in _dms['dms']:
+            res.append(Dm(d))
+        return res
+
     def getRooms(self):
         headers = {'authorization': f'Bearer {self.token}'}
         json = requests.get(rooms, headers=headers).json()
-        if json['success']:
-            return json['rooms']
-        else:
-            return json['errors'][0]['msg']
+        if not json['success']:
+            raise json['errors'][0]['msg']
+        return json['rooms']
 
     def copy(self):
         return copy.deepcopy(self)  # make a deep copy of this class
