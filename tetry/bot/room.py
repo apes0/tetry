@@ -31,7 +31,7 @@ class Room:
 
     async def leave(self):
         bot = self.bot
-        await send(leaveRoom(bot.messageId, self.id), bot.ws)
+        await send(leaveRoom(bot.messageId), bot.ws)
         bot.room = None
 
     def getPlayer(self, id):

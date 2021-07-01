@@ -57,7 +57,7 @@ async def msgHandle(ws, msg):
         for m in msg:
             await msgHandle(ws, m)
         return
-    comm = msg['command']
+    comm = msg['command'].split('.')[0]
 #    print(comm)
     if 'id' in msg:  # log id'ed messages
         logServer(msg, ws)
@@ -65,11 +65,8 @@ async def msgHandle(ws, msg):
     if comm not in responses.__dict__:
         return
     func = responses.__dict__[comm]
-    if 'caller' in func.__code__.co_varnames:
-        args = (bot, msg, msgHandle)
-    else:
-        args = (bot, msg)
-    await func(*args)
+#    print(comm, func)
+    await func(bot, msg, msgHandle)
 
 
 @sendEv.addListener
@@ -169,6 +166,7 @@ class Bot:
         self.commandBot = commandBot(self, commandPrefix)
         self.name = None
         self.id = None
+        self.loggedIn = False
 
     def run(self):
         trio.run(self._run)
@@ -180,9 +178,6 @@ class Bot:
     async def createRoom(self, public: bool):
         # createroom message
         await send(createroom(public, self.messageId), self.ws)
-
-    async def leaveRoom(self):
-        await send(leaveRoom(self.messageId), self.ws)
 
     async def _run(self):
         self.user = getInfo(self.token)  # get info for the current user

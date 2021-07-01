@@ -105,7 +105,7 @@ def leaveRoom(id):
     return {
         'id': id,
         'command': 'leaveroom',
-        'data': {}
+        'data': False
     }
 
 

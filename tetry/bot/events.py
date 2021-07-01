@@ -12,13 +12,16 @@ class Event:
             self.triggered = False
 
     # trigger event with args, runs using a nursery supplied from the run func
-    async def trigger(self, nurs, *args):
+    async def trigger(self, nurs, *args, blocking=False):
         if self.triggerOnce:  # check if we can be triggered more than once
             if self.triggered:  # return if we have been triggered more than once
                 return
         logger.info(f'trigger {self.name} with {args}')
         for func in self.funcs:
-            nurs.start_soon(func, *args)  # start the funcs with their args
+            if not blocking:
+                nurs.start_soon(func, *args)  # start the funcs with their args
+            else:
+                await func(*args)
 
     def addListener(self, func):  # add a listener
         logger.info(f'add listener {func}')

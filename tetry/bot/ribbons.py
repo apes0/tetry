@@ -20,7 +20,7 @@ sendEv = Event('sendEv')
 
 
 async def send(data, ws):
-    await sendEv.trigger(ws.nurs, data, ws)
+    await sendEv.trigger(ws.nurs, data, ws, blocking=True)
 #    print(data)
     data = pack(data)
 #    print(data)

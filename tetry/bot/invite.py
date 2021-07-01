@@ -8,5 +8,5 @@ class Invite:
 
     async def accept(self):
         if self.bot.room:
-            await self.bot.leaveRoom()
+            await self.bot.room.leave()
         await self.bot.joinRoom(self.roomId)
