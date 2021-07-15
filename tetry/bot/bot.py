@@ -7,8 +7,8 @@ import trio
 
 from . import responses
 from .chatCommands import commandBot
-from .commands import (createroom, die, dm, invite, joinroom, new, ping,
-                       presence, removeFriend)
+from .commands import (createroom, die, dm, invite, joinroom, new,
+                       notificationAck, ping, presence, removeFriend)
 from .dm import Dm
 from .events import Event
 from .ribbons import conn, connect, getInfo, message, send, sendEv
@@ -139,7 +139,7 @@ events = [
 
 
 class Bot:
-    def __init__(self, token, commandPrefix='!'):
+    def __init__(self, token, commandPrefix='!', handling=None):
         self.token = token
         self.room = None
         self.messageId = 0
@@ -148,14 +148,16 @@ class Bot:
         self.sockid = None
         self.resume = None
         self.messages = []
-        self.handling = {
-            'arr': 0,
-            'das': 6,
-            'sdf': 5,
-            'safelock': True,
-            'cancel': False,
-            'dcd': 0,
-        }
+        if not handling:
+            handling = {
+                'arr': 0,
+                'das': 1,
+                'sdf': 41,
+                'safelock': True,
+                'cancel': False,
+                'dcd': 0,
+            }
+        self.handling = handling
         self.nurs = None
         self.ws = None
         self.serverMessages = []
@@ -170,6 +172,9 @@ class Bot:
         self.id = None
         self.loggedIn = False
         self.onlineUsers = 0
+        self.presences = []
+        self.worker = None
+        self.friends = []
 
     def run(self):
         trio.run(self._run)
@@ -220,6 +225,9 @@ class Bot:
 
     async def setPresence(self, status, detail=''):
         await send(presence(self.messageId, status, detail), self.ws)
+
+    async def notificationAck(self, id=None):
+        await send(notificationAck(id), self.ws)
 
     def getDms(self, uid):
         res = []

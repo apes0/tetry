@@ -176,3 +176,10 @@ def dm(id, uid, msg):
             'msg': msg
         }
     }
+
+
+def notificationAck(id):
+    msg = {'command': 'social.notifications.ack'}
+    if id:
+        msg['data'] = id
+    return msg

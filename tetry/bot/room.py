@@ -57,6 +57,9 @@ class Room:
         await send(chat(message, self.bot.messageId), self.bot.ws)
 
     async def updateConfig(self, data):
+        _data = []
+        for opt in data:
+            _data.append({'index': opt[0], 'value': opt[1]})
         await send(updateConfig(self.bot.messageId, data), self.bot.ws)
 
     def getBots(self):

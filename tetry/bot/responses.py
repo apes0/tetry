@@ -41,7 +41,11 @@ async def hello(bot, msg, caller):
             await caller(bot.ws, m)  # handle every unseen message
 
 
-async def authorize(bot, _msg, _caller):
+async def authorize(bot, msg, _caller):
+    bot.worker = msg['data']['worker']
+    bot.onlineUsers = msg['data']['social']['total_online']
+    bot.presences = msg['data']['social']['presences']
+#    print(msg['data']['social'])
     if not bot.loggedIn:
         await bot.setPresence('online')  # set the presence
         await bot._trigger('ready')
@@ -132,6 +136,8 @@ async def social(bot, msg, _caller):
         bot.onlineUsers = msg['data']
     elif subcomm == 'dm':
         await bot._trigger('dm', Dm(msg['data']))
+    elif subcomm == 'presence':
+        bot.presences[msg['data']['user']] = msg['data']['presence']
 
 
 async def leaveroom(bot, msg, _caller):
