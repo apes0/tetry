@@ -40,8 +40,8 @@ async def start(bot):
 
 @message.addListener
 async def _msgHandle(ws, msg):
+    bot = ws.bot
     if msg == b'\x0c':  # ping
-        bot = ws.bot
         ping = time.time() - bot.lastPing  # calculate the time it took to recive a pong
         bot.ping = ping
         await bot._trigger('pinged', ping)
@@ -52,16 +52,19 @@ async def _msgHandle(ws, msg):
 
 async def msgHandle(ws, msg):
     bot = ws.bot
-    if isinstance(msg, tuple):  # message with an id
+    if isinstance(msg, tuple):  # if the message has an id
+        id = msg[0]
+        bot.serverId = max(id, bot.serverId)
         msg = msg[1]
+        msg['id'] = id
+        logServer(msg, ws)
     if isinstance(msg, list):  # multiple messages that should be handled
         for m in msg:
             await msgHandle(ws, m)
         return
+    print(f'parsing command {msg["command"]}')
     comm = msg['command'].split('.')[0]
 #    print(comm)
-    if 'id' in msg:  # log id'ed messages
-        logServer(msg, ws)
     logger.info(f'got {comm} command')
     if comm not in responses.__dict__:
         return
@@ -104,6 +107,7 @@ def log(msg, ws):
 
 
 def logServer(msg, ws):
+    #    print(f'logging message {msg}')
     bot = ws.bot
     messages = bot.serverMessages
     messages.append(Message(msg))  # log the new message
@@ -139,15 +143,16 @@ events = [
 
 
 class Bot:
-    def __init__(self, token, commandPrefix='!', handling=None):
-        self.token = token
-        self.room = None
-        self.messageId = 0
-        self.serverId = 0
-        self.events = {}
-        self.sockid = None
-        self.resume = None
-        self.messages = []
+    def __init__(self, token, commandPrefix='!', handling=None, replayFrames=30):
+        self.replayFrames = replayFrames  # how many frames to send
+        self.token = token  # bot token
+        self.room = None  # room class
+        self.messageId = 0  # message id for sending to the server
+        self.serverId = 0  # server id
+        self.events = {}  # events, each name has an event class representing it
+        self.sockid = None  # socket id
+        self.resume = None  # resume token
+        self.messages = []  # messages sent
         if not handling:
             handling = {
                 'arr': 0,
@@ -157,24 +162,24 @@ class Bot:
                 'cancel': False,
                 'dcd': 0,
             }
-        self.handling = handling
-        self.nurs = None
-        self.ws = None
-        self.serverMessages = []
-        self.user = None
+        self.handling = handling  # bot handling (effects playing only)
+        self.nurs = None  # nursery
+        self.ws = None  # websocket
+        self.serverMessages = []  # messages recived
+        self.user = None  # user info
         for event in events:
             self.events[event] = Event(event)  # event class for each event
         self.ping = 0  # seconds
-        self.lastPing = None
+        self.lastPing = None  # when the last ping was sent
         # command bot for chat commands
-        self.commandBot = commandBot(self, commandPrefix)
-        self.name = None
-        self.id = None
-        self.loggedIn = False
-        self.onlineUsers = 0
-        self.presences = []
-        self.worker = None
-        self.friends = []
+        self.commandBot = commandBot(self, commandPrefix)  # command bot
+        self.name = None  # bot name
+        self.id = None  # bot id
+        self.loggedIn = False  # bool showing if the bot is logged in
+        self.onlineUsers = 0  # users online
+        self.presences = []  # friend presences
+        self.worker = None  # websocket worker
+        self.friends = []  # bot friends
 
     def run(self):
         trio.run(self._run)

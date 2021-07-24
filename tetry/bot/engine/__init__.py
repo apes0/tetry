@@ -1,1 +1,1 @@
-pass
+from .game import Game

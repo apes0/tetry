@@ -18,6 +18,7 @@ class Room:
         self.bracket = 'spectator'  # defualt bracket for bots only
         self.inGame = self.state == 'ingame'
         self.game = None
+        self.left = False
 
     async def switchBracket(self, playing: bool, uid=None):
         bracket = ['spectator', 'player'][playing]
@@ -32,7 +33,7 @@ class Room:
     async def leave(self):
         bot = self.bot
         await send(leaveRoom(bot.messageId), bot.ws)
-        bot.room = None
+        self.left = True
 
     def getPlayer(self, id):
         return self.players[self._getIndex(id)]

@@ -35,9 +35,11 @@ async def hello(bot, msg, caller):
         # authorize message
         await send(_authorize(bot.messageId, bot.token, bot.handling), bot.ws)
     # get the raw json for the seen messages
-    seen = [m.message for m in bot.serverMessages]
+    print([msg.message for msg in bot.serverMessages])
+    seenIds = [m.message['id'] for m in bot.serverMessages]
+    print(seenIds)
     for m in messages:
-        if m not in seen:
+        if m['id'] not in seenIds:
             await caller(bot.ws, m)  # handle every unseen message
 
 
@@ -69,7 +71,7 @@ async def gmupdate(bot, msg, _caller):
         oldRoom = bot.room
         room = Room(msg['data'], bot)  # create a new room object
         bot.room = room
-        if not oldRoom:  # trigger the joined room event if the room was of None type
+        if not oldRoom or oldRoom.left:  # trigger the joined room event if the room was of None type
             await bot._trigger('joinedRoom', room)
     else:
         subcomm = coms[1]
@@ -141,5 +143,6 @@ async def social(bot, msg, _caller):
 
 
 async def leaveroom(bot, msg, _caller):
-    bot.room = None
+    if bot.room.id == msg['data']:
+        bot.room.left = True
     await bot._trigger('leftRoom', msg['data'])

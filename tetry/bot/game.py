@@ -3,12 +3,11 @@ import math
 import trio
 
 from .commands import replay
-from .pieceRng import Rng
+from .engine import Game as _Game
 from .ribbons import send
 
 
 class Game:
-    # dict_keys(['options', 'contexts', 'first', 'gameID', 'started', 'lastKickRun'])
     def __init__(self, data, bot):
         self.gameId = data['gameID']
         self.first = data['first']
@@ -23,7 +22,8 @@ class Game:
         self.pendingFrames = []
         self.opts = data['options']
         self.seed = self.opts['seed']
-        self.rng = Rng(self.seed)
+        self.game = _Game(self.opts, self.seed)
+        self.rng = self.game.rng
         self.bag = self.rng.getBag()
         self.started = data['started']
         self.lastKickRun = data['lastKickRun']
@@ -89,7 +89,6 @@ class Game:
             'frame': 0,
             'type': 'full'
         }
-        print(frame)
         self.pendingFrames.append(frame)
 
         await send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame), self.bot.ws)

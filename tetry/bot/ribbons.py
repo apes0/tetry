@@ -21,7 +21,7 @@ sendEv = Event('sendEv')
 
 async def send(data, ws):
     await sendEv.trigger(ws.nurs, data, ws, blocking=True)
-#    print(data)
+#    print(f'^  {data}')
     data = pack(data)
 #    print(data)
     await ws.send_message(data)
@@ -76,6 +76,6 @@ async def reciver(bot):
         except:
             return  # disconnected
         res = unpack(res)
-#        print(res)
+#        print(f'v  {res}')
         logger.info(f'recived {res}')
         await message.trigger(ws.nurs, ws, res)
