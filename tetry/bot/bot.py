@@ -186,6 +186,8 @@ class Bot:
 
     async def joinRoom(self, code: str):
         code = code.upper()
+        if self.room != None:
+            await self.room.leave()
         await send(joinroom(code, self.messageId), self.ws)  # joinroom message
 
     async def createRoom(self, public: bool):

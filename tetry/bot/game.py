@@ -102,7 +102,7 @@ class Game:
     async def start(self):
         t = trio.current_time()
         self.startTime = t
-        d = 30  # frames
+        d = self.bot.replayFrames  # frames
         frame = 0  # frames
         await self._start()
         while self.bot.room.inGame:

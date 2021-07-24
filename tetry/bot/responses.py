@@ -34,10 +34,8 @@ async def hello(bot, msg, caller):
     if not messages:
         # authorize message
         await send(_authorize(bot.messageId, bot.token, bot.handling), bot.ws)
-    # get the raw json for the seen messages
-    print([msg.message for msg in bot.serverMessages])
+    # get the ids for the seen messages
     seenIds = [m.message['id'] for m in bot.serverMessages]
-    print(seenIds)
     for m in messages:
         if m['id'] not in seenIds:
             await caller(bot.ws, m)  # handle every unseen message

@@ -7,6 +7,4 @@ class Invite:
         self.bot = bot
 
     async def accept(self):
-        if self.bot.room != None:
-            await self.bot.room.leave()
         await self.bot.joinRoom(self.roomId)
