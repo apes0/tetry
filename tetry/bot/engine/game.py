@@ -3,7 +3,7 @@ from .pieceRng import Rng
 
 class Game:
     def __init__(self, config, seed):
-        print(config.keys())
+        #        print(config.keys())
         self.config = config
         self.g = config['g']
         self.gFrames = 1/self.g

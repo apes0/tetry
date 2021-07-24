@@ -1,6 +1,5 @@
 class Invite:
     def __init__(self, data, bot):
-        print('invited')
         self.info = data
         self.roomId = data['roomid']
         self.sender = data['sender']

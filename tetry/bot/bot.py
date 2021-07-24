@@ -62,7 +62,7 @@ async def msgHandle(ws, msg):
         for m in msg:
             await msgHandle(ws, m)
         return
-    print(f'parsing command {msg["command"]}')
+#    print(f'parsing command {msg["command"]}')
     comm = msg['command'].split('.')[0]
 #    print(comm)
     logger.info(f'got {comm} command')
