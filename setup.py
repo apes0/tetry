@@ -6,7 +6,8 @@ with open('readme.md') as f:
 
 setup(
     name='tetry',
-    packages=find_packages(include=['tetry', 'tetry.bot', 'tetry.bot.engine']),
+    packages=find_packages(
+        include=['tetry', 'tetry.api', 'tetry.oldApi', 'tetry.bot', 'tetry.bot.engine']),
     version='0.2',
     description='tetr.io api wrapper',
     long_description=readme,

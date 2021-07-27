@@ -21,10 +21,9 @@ logger = logging.getLogger(__name__)
 
 @conn.addListener
 async def heartbeat(bot):
-    d = 5
     while True:
         ws = bot.ws
-        await trio.sleep(d)
+        await trio.sleep(bot.pingInterval)
         try:
             await send(ping, ws)
             # note the time for the last sent ping, used to calculate the ping when we recive a pong
@@ -143,7 +142,8 @@ events = [
 
 
 class Bot:
-    def __init__(self, token, commandPrefix='!', handling=None, replayFrames=30):
+    def __init__(self, token, commandPrefix='!', handling=None, replayFrames=30, pingInterval=5):
+        self.pingInterval = pingInterval  # interval between ping measurements
         self.replayFrames = replayFrames  # how many frames to send
         self.token = token  # bot token
         self.room = None  # room class
