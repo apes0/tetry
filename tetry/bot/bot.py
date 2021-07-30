@@ -5,6 +5,7 @@ import time
 import requests
 import trio
 
+from ..api.user import getUser
 from . import responses
 from .chatCommands import commandBot
 from .commands import (createroom, die, dm, invite, joinroom, new,
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 @conn.addListener
 async def heartbeat(bot):
+    await send(new, bot.ws)
     while True:
         ws = bot.ws
         await trio.sleep(bot.pingInterval)
@@ -30,11 +32,6 @@ async def heartbeat(bot):
             bot.lastPing = time.time()
         except:
             return  # disconnected
-
-
-async def start(bot):
-    await send(new, bot.ws)
-    conn.removeListener(start)
 
 
 @message.addListener
@@ -65,9 +62,10 @@ async def msgHandle(ws, msg):
     comm = msg['command'].split('.')[0]
 #    print(comm)
     logger.info(f'got {comm} command')
-    if comm not in responses.__dict__:
+    try:
+        func = responses.__dict__[comm]
+    except:
         return
-    func = responses.__dict__[comm]
 #    print(comm, func)
     await func(bot, msg, msgHandle)
 
@@ -147,7 +145,7 @@ class Bot:
         self.replayFrames = replayFrames  # how many frames to send
         self.token = token  # bot token
         self.room = None  # room class
-        self.messageId = 0  # message id for sending to the server
+        self.messageId = 1  # message id for sending to the server
         self.serverId = 0  # server id
         self.events = {}  # events, each name has an event class representing it
         self.sockid = None  # socket id
@@ -202,7 +200,6 @@ class Bot:
             raise BaseException(
                 'Your account is not a bot account, ask tetr.io support (support@tetr.io) for a bot account!')
         async with trio.open_nursery() as nurs:  # open a nursery
-            conn.addListener(start)
             nurs.start_soon(connect, self, nurs)  # connect to the websocket
             self.nurs = nurs
 
@@ -227,7 +224,10 @@ class Bot:
     async def invite(self, uid):
         await send(invite(self.messageId, uid), self.ws)  # die message
 
-    async def removeFriend(self, uid):
+    async def removeFriend(self, uid=None, name=None):
+        if name and not uid:
+            uid = getUser(name).id
+        print(uid)
         await send(removeFriend(self.messageId, uid), self.ws)  # die message
 
     async def setPresence(self, status, detail=''):

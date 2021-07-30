@@ -13,9 +13,8 @@ class Event:
 
     # trigger event with args, runs using a nursery supplied from the run func
     async def trigger(self, nurs, *args, blocking=False):
-        if self.triggerOnce:  # check if we can be triggered more than once
-            if self.triggered:  # return if we have been triggered more than once
-                return
+        if self.triggerOnce and self.triggered:  # check if we can be triggered more than once
+            return
         logger.info(f'trigger {self.name} with {args}')
         for func in self.funcs:
             if not blocking:

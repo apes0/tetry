@@ -29,9 +29,8 @@ def extensionTag(data):
     return prefix + data  # just prefix + binary data
 
 
-def extractedId(data):
+def extractedId(data, id):
     prefix = b'\xAE'
-    id = data['id']  # get the id of the message
     id = struct.pack('!I', id)
     return prefix + id + msgpack.packb(data)
 
@@ -43,9 +42,11 @@ def pack(data):
         d = extensionTag(data)
     elif isinstance(data, list):  # only batch tags are a dict object, which is missing an id member
         d = batchTag(data)
+    elif isinstance(data, tuple):
+        d = extractedId(data[1], data[0])
     elif 'id' in data:
         # extracted id tags are also a dict, but have an id member
-        d = extractedId(data)
+        d = extractedId(data, data['id'])
     else:
         d = standartId(data)  # only standart id tags are binary blobs
     return d

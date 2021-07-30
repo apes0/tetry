@@ -160,11 +160,13 @@ def invite(id, uid):
 
 
 def removeFriend(id, uid):
-    return {
-        'command': 'social.relationships.remove',
-        'id': id,
-        'data': uid
-    }
+    return (
+        id,
+        {
+            'command': 'social.relationships.remove',
+            'data': uid
+        }
+    )
 
 
 def dm(id, uid, msg):
