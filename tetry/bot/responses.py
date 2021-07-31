@@ -108,6 +108,14 @@ async def endmulti(bot, _msg, _caller):  # end of game
     await bot._trigger('gameEnd')
 
 
+async def ige(bot, msg, _caller):
+    #    print(f'ige: {msg}')
+    type = msg['data']['data']['type']
+    if type == 'attack':
+        bot.room.game.acceptGarbage(msg['data'])
+    # TODO: add kev type
+
+
 async def startmulti(bot, _msg, _caller):  # start of game
     bot.room.inGame = True
     await bot._trigger('gameStart')

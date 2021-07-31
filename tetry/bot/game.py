@@ -28,6 +28,40 @@ class Game:
         self.started = data['started']
         self.lastKickRun = data['lastKickRun']
         self.replay = {}
+        self.igeId = 0
+
+# (object) data: (for type ige)
+#
+#    (integer) id: Integer that increments every time type ige replay gets sent.
+#    (integer) frame: The frame the event occurred on.
+#    (string) type: Possible values are "ige".
+#    (object) data:
+#        (string) type: Always "attack".
+#        (integer) lines: Amount of lines sent.
+#        (integer) column: The column where the lines were sent to.
+#        (string) sender: The username of the user who sent the attack
+#        (integer) sent_frame: The frame the event occurred on (for some reason this is always slightly different than any other frame integer).
+
+    def acceptGarbage(self, data):
+        f = self.getFrame()
+        frame = f['frame']
+        print(frame, data['data']['sent_frame'], data['targetFrame'])
+        frame = {'frame': frame, 'type': 'ige', 'data':
+                 {
+                     'id': self.igeId,
+                     'type': 'ige',
+                     'frame': data['data']['sent_frame'],
+                     'data': {
+                         'type': 'attack',
+                         'lines': data['data']['lines'],
+                         'column': data['data']['column'],
+                         'sender': data['data']['sender'],
+                         'sent_frame': data['data']['sent_frame'],
+                     }
+                 }
+                 }
+        self.igeId += 1
+        self.pendingFrames.append(frame)
 
     def getFrame(self):
         passed = trio.current_time() - self.startTime
