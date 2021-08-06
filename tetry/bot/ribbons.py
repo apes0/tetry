@@ -1,7 +1,6 @@
 import logging
 
 import requests
-import trio
 from trio_websocket import connect_websocket_url
 
 from .events import Event

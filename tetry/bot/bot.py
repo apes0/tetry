@@ -5,7 +5,7 @@ import time
 import requests
 import trio
 
-from ..api.user import getUser
+from ..api.resolve import getId
 from . import responses
 from .chatCommands import commandBot
 from .commands import (createroom, die, dm, invite, joinroom, new,
@@ -83,6 +83,7 @@ async def changeId(msg, ws):
 class Message:
     def __init__(self, message):
         self.time = time.time()
+        self.id = message['id']
         self.message = message
 
     def checkTime(self, t):
@@ -110,8 +111,7 @@ def logServer(msg, ws):
     messages.append(Message(msg))  # log the new message
     logFor = 30  # seconds
     for message in messages:
-        remove = message.checkTime(logFor)
-        if remove:
+        if message.checkTime(logFor):
             messages.pop(0)  # remove the first message if needed
         else:
             break
@@ -218,23 +218,22 @@ class Bot:
     async def stop(self):
         await send(die, self.ws)  # die message
 
-    async def dm(self, uid, msg):
-        await send(dm(self.messageId, uid, msg), self.ws)  # die message
+    async def dm(self, msg, uid=None, name=None):
+        if not uid and name:
+            uid = getId(name, self.token)
+        await send(dm(self.messageId, uid, msg), self.ws)  # dm message
 
-    async def invite(self, uid):
-        await send(invite(self.messageId, uid), self.ws)  # die message
-
-    async def removeFriend(self, uid=None, name=None):
-        if name and not uid:
-            uid = getUser(name).id
-        print(uid)
-        await send(removeFriend(self.messageId, uid), self.ws)  # die message
+    async def invite(self, uid=None, name=None):
+        if not uid and name:
+            uid = getId(name, self.token)
+        await send(invite(self.messageId, uid), self.ws)  # invite message
 
     async def setPresence(self, status, detail=''):
+        # presence message
         await send(presence(self.messageId, status, detail), self.ws)
 
     async def notificationAck(self, id=None):
-        await send(notificationAck(id), self.ws)
+        await send(notificationAck(id), self.ws)  # notification ack message
 
     def getDms(self, uid):
         res = []

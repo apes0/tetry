@@ -130,3 +130,6 @@ dmypy.json
 
 # source tar file
 source.tar.gz
+
+# vscode stuff
+.vscode/

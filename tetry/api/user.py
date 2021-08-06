@@ -9,12 +9,12 @@ class User:
         self.data = data
         self.id = data['_id']
         self.username = data['username']
-        self.avatarRevision = data['avatar_revision']
+        self.avatarRevision = data.get('avatar_revision') or None
         self.league = data['league']
 
     def getPfp(self, rev=True):
         url = getAvatar(self.id)
-        if rev:
+        if rev and self.avatarRevision:
             url = addQureyParam(url, {'rv': self.avatarRevision})
         return url
 

@@ -27,3 +27,6 @@ def addParam(url, param):
 def addQureyParam(url, params):
     url += f'?{urlencode(params)}'
     return url
+
+def resolve(name):
+    return f'https://tetr.io/api/users/{name}/resolve'
