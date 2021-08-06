@@ -17,13 +17,13 @@ This library is a simple wrapper around the [Tetr.io](https://tetr.io/) API. It 
 
 ## Instalation
 
-installing from pip:
+### installing from pip
 
 ```sh
 python3 -m pip install tetry
 ```
 
-installing from source:
+### installing from source
 
 ```sh
 git clone https://github.com/apes0/tetry
@@ -35,7 +35,7 @@ python3 -m pip install -U .
 
 Here you will find code examples for the library.
 
-General api:
+### General api
 
 ```python
 from tetry import api
@@ -50,7 +50,7 @@ while (name := input()):
 
 ```
 
-Chat commands:
+### Chat commands
 
 ```python
 from tetry import bot
@@ -65,7 +65,7 @@ bot.run()
 
 ```
 
-Simple auto-host bot:
+### Simple auto-host bot
 
 ```python
 import trio
