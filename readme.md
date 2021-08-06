@@ -74,23 +74,19 @@ from tetry.bot import Bot
 
 bot = Bot(token='token')
 
-
 @bot.event
 async def ready():
     await bot.createRoom(False)
 
-
 @bot.event
 async def joinedRoom(room):
     print(room.invite)
-
 
 @bot.event
 async def userLeave(user):
     name = user['username']
     print(f'{name} has left')
     await bot.room.send(f'Goodbye {name}, hope to see you here again soon!')
-
 
 async def start(room):
     delay = 20 # seconds
@@ -105,14 +101,12 @@ async def start(room):
     else:
         await room.send('Not enough players!')
 
-
 @bot.event
 async def userJoin(user):
     room = bot.room
     name = user['username']
     await room.send(f'Welcome to this room, {name}!')
     await start(room)
-
 
 @bot.event
 async def gameEnd():
