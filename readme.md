@@ -1,12 +1,15 @@
 
 # Tetry
 
+![PyPi version](https://img.shields.io/pypi/v/tetry.svg) ![Code size](https://img.shields.io/github/languages/code-size/apes0/tetry)
+
 A simple python library for interacting with the [Tetr.io](https://tetr.io/) API.
 
 ## contents
 
 - [About](#About)
 - [Instalation](#Instalation)
+- [Documentation](#Documentation)
 - [Examples](#Examples)
 - [Contribution](#Contribution)
 - [Helpful links](#Helpful-links)
@@ -30,6 +33,10 @@ git clone https://github.com/apes0/tetry
 cd tetry
 python3 -m pip install -U .
 ```
+
+## Documentation
+
+Coming soon!
 
 ## Examples
 
@@ -126,4 +133,4 @@ You can feel free to contribute to the this project by making a PR, making sugge
 
 - [tetrio bot docs](https://github.com/Poyo-SSB/tetrio-bot-docs/) - bot api documentation
 - [tetr.js](https://github.com/tetrjs/tetr.js/) - a javascript library for the api
-- [tetrio public api docs](https://tetr.io/about/api/) - the official api docs
+- [tetrio public api docs](https://tetr.io/about/api/) - the official api documentation
