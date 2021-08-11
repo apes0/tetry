@@ -79,6 +79,8 @@ async def gmupdate(bot, msg, _caller):
             await bot._trigger('changeOwner', owner)
         elif subcomm == 'bracket':  # bracket change
             ind = bot.room._getIndex(msg['data']['uid'])
+            if msg['data']['uid'] == bot.id:
+                bot.room.playing = (msg['data']['bracket'] == 'player')
             bot.room.players[ind]['bracket'] = msg['data']['bracket']
             await bot._trigger('changeBracket', bot.room.players[ind])
         elif subcomm == 'leave':  # player leaving

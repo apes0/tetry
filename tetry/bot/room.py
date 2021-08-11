@@ -15,9 +15,9 @@ class Room:
         self.players = data['players']
         self.invite = room + self.id
         self.bot = bot
-        self.bracket = 'spectator'  # defualt bracket for bots only
+        self.bracket = self.getPlayer(bot.id)['bracket']
         self.inGame = self.state == 'ingame'
-        self.playing = False
+        self.playing = self.bracket == 'player'
         self.game = None
         self.left = False
 
@@ -29,7 +29,6 @@ class Room:
         if uid:
             await send(switchBracketHost(bot.messageId, bracket, uid), ws)
         else:
-            self.playing = playing
             await send(switchBracket(bot.messageId, bracket), ws)
 
     async def leave(self):
