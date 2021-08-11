@@ -1,10 +1,13 @@
 import requests
 
 from .urls import recordUrl
+from .cache import Cache
 
 
 class Records:
     def __init__(self, data):
+        self.cache = Cache(data['cache'])
+        data = data['data']
         self.data = data
         self.zen = data['zen']
         self.blitz = data['records']['blitz']
@@ -22,5 +25,4 @@ def getRecords(name):
         resp = ses.get(url).json()
         if not resp['success']:
             raise Exception(resp['error'])
-    json = resp['data']
-    return Records(json)
+    return Records(resp)

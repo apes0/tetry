@@ -112,7 +112,7 @@ async def ige(bot, msg, _caller):
     #    print(f'ige: {msg}')
     type = msg['data']['data']['type']
     if type == 'attack':
-        bot.room.game.acceptGarbage(msg['data'])
+        bot.room.game._acceptGarbage(msg['data'])
     # TODO: add kev type
 
 
@@ -124,10 +124,10 @@ async def startmulti(bot, _msg, _caller):  # start of game
 async def replay(bot, msg, _caller):  # replay message
     for f in msg['data']['frames']:  # go through every frame
         fr = Frame(f)  # make a frame object
-        if fr.type == 'start':
+        if fr.type == 'start' and bot.room.playing:
             await bot._trigger('playing', bot.room)
             await bot.room.game.start()
-        # nothing else currently, TODO: implement this
+        # nothing else currently, TODO: implement more frame types
 
 
 async def readymulti(bot, msg, _caller):  # data for the game before it starts

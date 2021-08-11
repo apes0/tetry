@@ -11,15 +11,17 @@ class commandBot:
 
     async def commandParser(self, msg):
         text = msg.content
+        if msg.user['_id'] == self.bot.id:  # ignore messages from the bot itself
+            return
         if text.startswith(self.prefix):  # check if the message is a command
             text = text[len(self.prefix):]  # get the command
-            comm = text.split(' ')  # get a list of the args
+            _comm = text.split(' ')  # get a list of the args
             args = [msg]  # function args
-            if len(comm) > 1:
-                args += comm[1:]  # add all command args if we have any
-            comm = comm[0]  # get command name
-            nurs = self.bot.nurs
+            comm = _comm[0]  # get command name
             if comm in self.commands:  # check if we have a real command
+                if len(_comm) > 1:
+                    args += _comm[1:]  # add all command args if we have any
+                nurs = self.bot.nurs
                 await self.commands[comm].trigger(nurs, *args)
 
     def register(self, func):

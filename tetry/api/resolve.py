@@ -4,6 +4,7 @@ from .urls import resolve
 
 
 def getId(name, token):
+    name = name.lower()
     headers = {'authorization': f'Bearer {token}'}
     res = requests.get(resolve(name), headers=headers).json()
     if not res['success']:

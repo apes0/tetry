@@ -17,6 +17,7 @@ class Room:
         self.bot = bot
         self.bracket = 'spectator'  # defualt bracket for bots only
         self.inGame = self.state == 'ingame'
+        self.playing = False
         self.game = None
         self.left = False
 
@@ -28,6 +29,7 @@ class Room:
         if uid:
             await send(switchBracketHost(bot.messageId, bracket, uid), ws)
         else:
+            self.playing = playing
             await send(switchBracket(bot.messageId, bracket), ws)
 
     async def leave(self):

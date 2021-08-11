@@ -9,11 +9,11 @@ from ..api.resolve import getId
 from . import responses
 from .chatCommands import commandBot
 from .commands import (createroom, die, dm, invite, joinroom, new,
-                       notificationAck, ping, presence, removeFriend)
+                       notificationAck, ping, presence)
 from .dm import Dm
 from .events import Event
 from .ribbons import conn, connect, getInfo, message, send, sendEv
-from .urls import dms, rooms
+from .urls import dms, rooms, friend, unfriend
 
 logger = logging.getLogger(__name__)
 
@@ -234,6 +234,24 @@ class Bot:
 
     async def notificationAck(self, id=None):
         await send(notificationAck(id), self.ws)  # notification ack message
+
+    def addFriend(self, uid=None, name=None):
+        if not uid and name:
+            uid = getId(name, self.token)
+        headers = {'authorization': f'Bearer {self.token}'}
+        json = requests.post(friend, headers=headers,
+                             json={'user': uid}).json()
+        if not json['success']:
+            raise json['errors'][0]['msg']
+
+    def removeFriend(self, uid=None, name=None):
+        if not uid and name:
+            uid = getId(name, self.token)
+        headers = {'authorization': f'Bearer {self.token}'}
+        json = requests.post(unfriend, headers=headers,
+                             json={'user': uid}).json()
+        if not json['success']:
+            raise json['errors'][0]['msg']
 
     def getDms(self, uid):
         res = []

@@ -2,10 +2,13 @@ import requests
 
 from .records import getRecords
 from .urls import addParam, addQureyParam, getAvatar, getRankImage, user
+from .cache import Cache
 
 
 class User:
     def __init__(self, data):
+        self.cache = Cache(data['cache'])
+        data = data['data']['user']
         self.data = data
         self.id = data['_id']
         self.username = data['username']
@@ -32,5 +35,4 @@ def getUser(name):
         resp = ses.get(url).json()
         if not resp['success']:
             raise Exception(resp['error'])
-    json = resp['data']['user']
-    return User(json)
+    return User(resp)

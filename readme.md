@@ -12,6 +12,7 @@ A simple python library for interacting with the [Tetr.io](https://tetr.io/) API
 - [Documentation](#Documentation)
 - [Examples](#Examples)
 - [Contribution](#Contribution)
+- [Notice](#Notice)
 - [Helpful links](#Helpful-links)
 
 ## About
@@ -128,6 +129,10 @@ bot.run()
 ## Contribution
 
 You can feel free to contribute to the this project by making a PR, making suggestions and opening issues for bugs/questions.
+
+## Notice
+
+This library is **NOT** affiliated with, endorsed by, or otherwise associated with TETR.IO or osk.
 
 ## Helpful links
 
