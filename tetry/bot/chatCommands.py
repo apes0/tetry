@@ -1,5 +1,7 @@
 from .events import Event
 
+commandError = Event('commandError')
+
 
 class commandBot:
     def __init__(self, bot, prefix):
@@ -8,6 +10,9 @@ class commandBot:
         self.commands = {}
         self.prefix = prefix
         self.bot = bot
+
+    async def errorHandler(self, e):
+        await commandError.trigger(self.bot.nurs, e)
 
     async def commandParser(self, msg):
         text = msg.content

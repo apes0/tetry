@@ -1,7 +1,7 @@
 class Board:
     def __init__(self):
         self.board = [[0]*10]*40
- 
+
     def collides(self, piece, x, y):  # check if a piece collides with the board
         for _y in range(len(piece)):
             layer = piece[_y]
@@ -11,5 +11,3 @@ class Board:
                 if piece and self.board[_y + y][_x + x]:
                     return True
         return False
- 
-

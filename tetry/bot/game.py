@@ -74,6 +74,12 @@ class Game:
         frame['frame'] += frames
         self.release(key)
 
+    def move(self, key, x, rate=1):
+        frame = self.getFrame()
+        for _ in range(x):
+            frame['frame'] += rate
+            self.press(key, frame=frame)
+
     def release(self, key, frame=None):
         f = frame or self.getFrame()
         frame = f['frame']
