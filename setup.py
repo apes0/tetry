@@ -10,11 +10,11 @@ setup(
     name='tetry',
     packages=find_packages(
         include=['tetry', 'tetry.api', 'tetry.oldApi', 'tetry.bot', 'tetry.bot.engine']),
-    version='0.3.2',
+    version='0.3.3',
     description='tetr.io api wrapper',
     long_description=readme,
     long_description_content_type='text/markdown',
     author='apes0',
     python_requires='>=3',
-    install_requires=['requests', 'msgpack', 'trio', 'trio-websockets']
+    install_requires=['requests', 'msgpack', 'trio', 'trio-websocket']
 )
