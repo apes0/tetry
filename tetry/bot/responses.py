@@ -2,6 +2,7 @@ import logging
 
 from trio_websocket import connect_websocket_url
 
+from .friend import Friend
 from .chatMessage import ChatMessage
 from .commands import authorize as _authorize
 from .commands import hello as _hello
@@ -45,7 +46,8 @@ async def authorize(bot, msg, _caller):
     bot.worker = msg['data']['worker']
     bot.onlineUsers = msg['data']['social']['total_online']
     bot.presences = msg['data']['social']['presences']
-#    print(msg['data']['social'])
+    bot.friends = [Friend(f, bot)
+                   for f in msg['data']['social']['relationships']]
     if not bot.loggedIn:
         await bot.setPresence('online')  # set the presence
         await bot._trigger('ready')

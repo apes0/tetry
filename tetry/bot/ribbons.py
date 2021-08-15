@@ -15,7 +15,7 @@ def getCommit():
     return json['signature']['commit']['id']
 
 
-sendEv = Event('sendEv')
+sendEv = Event('sendEv', errorEvent=False)
 
 
 async def send(data, ws):
@@ -51,7 +51,7 @@ def getRibbon(token):
 # connect to a websocket and start a reciver and a heartbeat proccess
 
 
-conn = Event('conn')
+conn = Event('conn', errorEvent=False)
 
 
 async def connect(bot, nurs):
@@ -63,7 +63,7 @@ async def connect(bot, nurs):
     bot.ws = ws
     nurs.start_soon(conn.trigger, nurs, bot)
 
-message = Event('message')
+message = Event('message', errorEvent=False)
 
 
 @conn.addListener

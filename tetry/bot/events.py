@@ -20,7 +20,8 @@ class Event:
     async def spawner(self, nurs, func, *args):
         try:
             await func(*args)
-        except Exception as e:
+        except BaseException as e:
+            print(e)
             if self.errorEvent:
                 await self.errorEvent.trigger(nurs, e)
             else:

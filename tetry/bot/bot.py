@@ -168,11 +168,11 @@ class Bot:
         for event in events:
             self.events[event] = Event(event)  # event class for each event
         self.ping = 0  # seconds
-        self.lastPing = None  # when the last ping was sent
+        self.lastPing = 0  # when the last ping was sent
         # command bot for chat commands
         self.commandBot = commandBot(self, commandPrefix)  # command bot
-        self.name = None  # bot name
-        self.id = None  # bot id
+        self.name = ''  # bot name
+        self.id = ''  # bot id
         self.loggedIn = False  # bool showing if the bot is logged in
         self.onlineUsers = 0  # users online
         self.presences = []  # friend presences

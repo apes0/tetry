@@ -1,7 +1,8 @@
 
 # Tetry
 
-![PyPi version](https://img.shields.io/pypi/v/tetry.svg) ![Code size](https://img.shields.io/github/languages/code-size/apes0/tetry)
+[![PyPi version](https://img.shields.io/pypi/v/tetry.svg) ![Code
+size](https://img.shields.io/github/languages/code-size/apes0/tetry)](https://pypi.org/project/tetry/)
 
 A simple python library for interacting with the [Tetr.io](https://tetr.io/) API.
 
