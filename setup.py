@@ -16,5 +16,5 @@ setup(
     long_description_content_type='text/markdown',
     author='apes0',
     python_requires='>=3',
-    install_requires=['requests', 'msgpack', 'trio', 'trio-websocket']
+    install_requires=['requests', 'msgpack', 'trio', 'trio-websocket', 'pytest']
 )
