@@ -1,0 +1,5 @@
+trio
+requests
+pytest
+trio_websocket
+msgpack_python

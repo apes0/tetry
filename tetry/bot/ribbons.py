@@ -72,6 +72,7 @@ async def reciver(bot):
         try:
             ws = bot.ws
             res = await ws.get_message()
+#            print(res)
         except:
             return  # disconnected
         res = unpack(res)
