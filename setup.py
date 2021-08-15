@@ -18,7 +18,7 @@ setup(
     },
     packages=find_packages(
         include=['tetry', 'tetry.api', 'tetry.oldApi', 'tetry.bot', 'tetry.bot.engine']),
-    version='0.3.5',
+    version='0.3.6',
     description='tetr.io api wrapper',
     long_description=readme,
     long_description_content_type='text/markdown',
