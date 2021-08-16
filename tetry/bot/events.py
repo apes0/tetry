@@ -21,7 +21,7 @@ class Event:
         try:
             await func(*args)
         except BaseException as e:
-            print(e)
+            logger.info(f'event {self.name} raised {e}')
             if self.errorEvent:
                 await self.errorEvent.trigger(nurs, e)
             else:

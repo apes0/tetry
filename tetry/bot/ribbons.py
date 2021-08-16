@@ -63,7 +63,27 @@ async def connect(bot, nurs):
     bot.ws = ws
     nurs.start_soon(conn.trigger, nurs, bot)
 
-message = Event('message', errorEvent=False)
+_message = Event('_message', errorEvent=False)  # message event
+message = Event('message', errorEvent=False)  # message event afetr sorting
+
+pending = {}
+
+
+@_message.addListener
+async def sortMessages(ws, res):
+    if not isinstance(res, tuple):
+        await message.trigger(ws.nurs, ws, res)
+        return
+    bot = ws.bot
+    sid = bot.serverId
+    id = res[0]
+    pending[id] = res
+#    print(id, sid, res)
+    while sid in pending.keys():
+        msg = pending[sid]
+        await message.trigger(ws.nurs, ws, msg)
+        del pending[sid]
+        sid += 1
 
 
 @conn.addListener
@@ -78,4 +98,4 @@ async def reciver(bot):
         res = unpack(res)
 #        print(f'v  {res}')
         logger.info(f'recived {res}')
-        await message.trigger(ws.nurs, ws, res)
+        await _message.trigger(ws.nurs, ws, res)

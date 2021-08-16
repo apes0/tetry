@@ -50,7 +50,7 @@ async def msgHandle(ws, msg):
     bot = ws.bot
     if isinstance(msg, tuple):  # if the message has an id
         id = msg[0]
-        bot.serverId = max(id, bot.serverId)
+        bot.serverId += 1
         msg = msg[1]
         msg['id'] = id
         logServer(msg, ws)
@@ -146,7 +146,7 @@ class Bot:
         self.token = token  # bot token
         self.room = None  # room class
         self.messageId = 1  # message id for sending to the server
-        self.serverId = 0  # server id
+        self.serverId = 1  # server id
         self.events = {}  # events, each name has an event class representing it
         self.sockid = None  # socket id
         self.resume = None  # resume token
