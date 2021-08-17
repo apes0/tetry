@@ -10,7 +10,8 @@ __version__ = ''
 
 with open('tetry/__init__.py') as f:
     for line in f.read().splitlines():
-        exec(line)
+        if line.startswith('__'):
+            exec(line)
 
 source = 'https://github.com/apes0/tetry'
 
