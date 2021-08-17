@@ -65,6 +65,7 @@ async def msgHandle(ws, msg):
     try:
         func = responses.__dict__[comm]
     except:
+        logger.info(f'unrecognized command {comm}')
         return
 #    print(comm, func)
     await func(bot, msg, msgHandle)
@@ -136,6 +137,8 @@ events = [
     'playing',  # called when you can play
     'invited',  # called when you get invited to join a room, you can accept or ignore the invite
     'dm',  # called when you get a dm
+    'migrated',  # called when the bot migrates to another worker
+    'notification'  # called when the bot recives a notification
 ]
 
 
@@ -178,6 +181,7 @@ class Bot:
         self.presences = []  # friend presences
         self.worker = None  # websocket worker
         self.friends = []  # bot friends
+        self.notifications = []  # notifications
 
     def run(self):
         trio.run(self._run)

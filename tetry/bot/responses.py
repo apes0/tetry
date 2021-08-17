@@ -13,6 +13,7 @@ from .game import Game
 from .invite import Invite
 from .ribbons import conn, send
 from .room import Room
+from .notification import Notification
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,8 @@ async def authorize(bot, msg, _caller):
     bot.presences = msg['data']['social']['presences']
     bot.friends = [Friend(f, bot)
                    for f in msg['data']['social']['relationships']]
+    bot.notifications = [Notification(
+        n, bot) for n in msg['data']['social']['notifications']]
     if not bot.loggedIn:
         await bot.setPresence('online')  # set the presence
         await bot._trigger('ready')
@@ -58,6 +61,11 @@ async def migrate(bot, msg, _caller):
     await bot.ws.aclose()  # close the connection to the websocket
     ws = msg['data']['endpoint']  # get the new endpoint
     await _reconnect(ws, bot.sockid, bot.resume, bot.nurs, bot)  # reconnect
+
+
+async def migrated(bot, msg, _caller):
+    bot.worker = msg['data']['worker']
+    await bot._trigger('migrated', bot.worker)
 
 
 async def err(_bot, msg, _caller):
@@ -150,6 +158,10 @@ async def social(bot, msg, _caller):
         await bot._trigger('dm', Dm(msg['data']))
     elif subcomm == 'presence':
         bot.presences[msg['data']['user']] = msg['data']['presence']
+    elif subcomm == 'notification':
+        notif = Notification(msg['data'], bot)
+        await bot._trigger('notification', notif)
+        bot.notifications.append(notif)
 
 
 async def leaveroom(bot, msg, _caller):
