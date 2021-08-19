@@ -1,126 +1,25 @@
 import copy
 import logging
-import time
 
 import requests
 import trio
 
 from ..api.resolve import getId
-from . import responses
 from .chatCommands import commandBot
-from .commands import (createroom, die, dm, invite, joinroom, new,
-                       notificationAck, ping, presence)
+from .commands import (createroom, die, dm, invite, joinroom,
+                       notificationAck, presence)
 from .dm import Dm
 from .events import Event
-from .ribbons import conn, connect, getInfo, message, send, sendEv
+from .ribbons import Connection, getInfo
 from .urls import dms, rooms, friend, unfriend
+from .reconnect import reconnect
 
 logger = logging.getLogger(__name__)
 
 # api docs: https://github.com/Poyo-SSB/tetrio-bot-docs
 
 
-@conn.addListener
-async def heartbeat(bot):
-    await send(new, bot.ws)
-    while True:
-        ws = bot.ws
-        await trio.sleep(bot.pingInterval)
-        try:
-            await send(ping, ws)
-            # note the time for the last sent ping, used to calculate the ping when we recive a pong
-            bot.lastPing = time.time()
-        except:
-            return  # disconnected
-
-
-@message.addListener
-async def _msgHandle(ws, msg):
-    bot = ws.bot
-    if msg == b'\x0c':  # ping
-        ping = time.time() - bot.lastPing  # calculate the time it took to recive a pong
-        bot.ping = ping
-        await bot._trigger('pinged', ping)
-        return
-    await msgHandle(ws, msg)
-#    print(msg)
-
-
-async def msgHandle(ws, msg):
-    bot = ws.bot
-    if isinstance(msg, tuple):  # if the message has an id
-        id = msg[0]
-        bot.serverId += 1
-        msg = msg[1]
-        msg['id'] = id
-        logServer(msg, ws)
-    if isinstance(msg, list):  # multiple messages that should be handled
-        for m in msg:
-            await msgHandle(ws, m)
-        return
-#    print(f'parsing command {msg["command"]}')
-    comm = msg['command'].split('.')[0]
-#    print(comm)
-    logger.info(f'got {comm} command')
-    try:
-        func = responses.__dict__[comm]
-    except:
-        logger.info(f'unrecognized command {comm}')
-        return
-#    print(comm, func)
-    await func(bot, msg, msgHandle)
-
-
-@sendEv.addListener
-# change the messageId for the bot if there is an id in the message we are sending
-async def changeId(msg, ws):
-    if isinstance(msg, bytes):
-        return
-    if 'id' in msg:
-        ws.bot.messageId += 1
-        log(msg, ws)  # log the message
-
-
-class Message:
-    def __init__(self, message):
-        self.time = time.time()
-        self.id = message['id']
-        self.message = message
-
-    def checkTime(self, t):
-        return time.time() - self.time >= t
-
-
-def log(msg, ws):
-    bot = ws.bot
-    messages = bot.messages
-    messages.append(Message(msg))  # log the new message
-    logFor = 30  # seconds
-    for message in messages:
-        remove = message.checkTime(logFor)
-        if remove:
-            messages.pop(0)  # remove the first message if needed
-        else:
-            break
-    bot.messages = messages
-
-
-def logServer(msg, ws):
-    #    print(f'logging message {msg}')
-    bot = ws.bot
-    messages = bot.serverMessages
-    messages.append(Message(msg))  # log the new message
-    logFor = 30  # seconds
-    for message in messages:
-        if message.checkTime(logFor):
-            messages.pop(0)  # remove the first message if needed
-        else:
-            break
-    bot.serverMessages = messages
-
 # bot class
-
-
 events = [
     'ready',  # called after logging in
     'joinedRoom',  # called after joining a room
@@ -144,6 +43,7 @@ events = [
 
 class Bot:
     def __init__(self, token, commandPrefix='!', handling=None, replayFrames=30, pingInterval=5):
+        self.connection = None  # the connection to the server
         self.pingInterval = pingInterval  # interval between ping measurements
         self.replayFrames = replayFrames  # how many frames to send
         self.token = token  # bot token
@@ -151,23 +51,22 @@ class Bot:
         self.messageId = 1  # message id for sending to the server
         self.serverId = 1  # server id
         self.events = {}  # events, each name has an event class representing it
-        self.sockid = None  # socket id
-        self.resume = None  # resume token
+        self.sockid = ''  # socket id
+        self.resume = ''  # resume token
         self.messages = []  # messages sent
-        if not handling:
-            handling = {
-                'arr': 0,
-                'das': 1,
-                'sdf': 41,
-                'safelock': True,
-                'cancel': False,
-                'dcd': 0,
-            }
-        self.handling = handling  # bot handling (effects playing only)
+        defaultHandling = {
+            'arr': 0,
+            'das': 1,
+            'sdf': 41,
+            'safelock': True,
+            'cancel': False,
+            'dcd': 0,
+        }
+        # bot handling (effects playing only)
+        self.handling = handling or defaultHandling
         self.nurs = None  # nursery
-        self.ws = None  # websocket
         self.serverMessages = []  # messages recived
-        self.user = None  # user info
+        self.user = {}  # user info
         for event in events:
             self.events[event] = Event(event)  # event class for each event
         self.ping = 0  # seconds
@@ -179,7 +78,7 @@ class Bot:
         self.loggedIn = False  # bool showing if the bot is logged in
         self.onlineUsers = 0  # users online
         self.presences = []  # friend presences
-        self.worker = None  # websocket worker
+        self.worker = {}  # websocket worker
         self.friends = []  # bot friends
         self.notifications = []  # notifications
 
@@ -190,11 +89,17 @@ class Bot:
         code = code.upper()
         if self.room != None:
             await self.room.leave()
-        await send(joinroom(code, self.messageId), self.ws)  # joinroom message
+        # joinroom message
+        await self.connection.send(joinroom(code, self.messageId))
 
     async def createRoom(self, public: bool):
         # createroom message
-        await send(createroom(public, self.messageId), self.ws)
+        await self.connection.send(createroom(public, self.messageId))
+
+    async def recconect(self, endpoint=None):
+        await self.connection.close()
+        endpoint = endpoint or self.connection.endpoint
+        await reconnect(endpoint, self.sockid, self.resume, self.nurs, self)
 
     async def _run(self):
         self.user = getInfo(self.token)  # get info for the current user
@@ -204,7 +109,9 @@ class Bot:
             raise BaseException(
                 'Your account is not a bot account, ask tetr.io support (support@tetr.io) for a bot account!')
         async with trio.open_nursery() as nurs:  # open a nursery
-            nurs.start_soon(connect, self, nurs)  # connect to the websocket
+            self.connection = Connection(self)  # create a connection
+            # connect to the websocket
+            nurs.start_soon(self.connection.connect, nurs)
             self.nurs = nurs
 
     async def _trigger(self, event, *args):  # trigger an event
@@ -220,24 +127,26 @@ class Bot:
         self.commandBot.register(func)
 
     async def stop(self):
-        await send(die, self.ws)  # die message
+        await self.connection.send(die)  # die message
 
     async def dm(self, msg, uid=None, name=None):
         if not uid and name:
             uid = getId(name, self.token)
-        await send(dm(self.messageId, uid, msg), self.ws)  # dm message
+        await self.connection.send(dm(self.messageId, uid, msg))  # dm message
 
     async def invite(self, uid=None, name=None):
         if not uid and name:
             uid = getId(name, self.token)
-        await send(invite(self.messageId, uid), self.ws)  # invite message
+        # invite message
+        await self.connection.send(invite(self.messageId, uid))
 
     async def setPresence(self, status, detail=''):
         # presence message
-        await send(presence(self.messageId, status, detail), self.ws)
+        await self.connection.send(presence(self.messageId, status, detail))
 
     async def notificationAck(self, id=None):
-        await send(notificationAck(id), self.ws)  # notification ack message
+        # notification ack message
+        await self.connection.send(notificationAck(id))
 
     def addFriend(self, uid=None, name=None):
         if not uid and name:

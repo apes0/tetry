@@ -5,7 +5,6 @@ import trio
 from .commands import replay
 from .engine import Game as _Game
 from .engine import pieces, spawnLocation
-from .ribbons import send
 
 
 class Game:
@@ -153,5 +152,5 @@ class Game:
             t += d/60
             frame += d
             await trio.sleep_until(t)
-            await send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame), self.bot.ws)
+            await self.bot.connection.send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame))
             self.pendingFrames = []

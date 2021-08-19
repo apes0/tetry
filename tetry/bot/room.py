@@ -1,6 +1,5 @@
 from .commands import (chat, kick, leaveRoom, startRoom, switchBracket,
                        switchBracketHost, transferOwnership, updateConfig)
-from .ribbons import send
 from .urls import room
 
 
@@ -25,15 +24,14 @@ class Room:
         bracket = ['spectator', 'player'][playing]
         self.bracket = bracket
         bot = self.bot
-        ws = bot.ws
         if uid:
-            await send(switchBracketHost(bot.messageId, bracket, uid), ws)
+            await self.bot.connection.send(switchBracketHost(bot.messageId, bracket, uid))
         else:
-            await send(switchBracket(bot.messageId, bracket), ws)
+            await self.bot.connection.send(switchBracket(bot.messageId, bracket))
 
     async def leave(self):
         bot = self.bot
-        await send(leaveRoom(bot.messageId), bot.ws)
+        await self.bot.connection.send(leaveRoom(bot.messageId))
         self.left = True
 
     def getPlayer(self, id):
@@ -47,22 +45,22 @@ class Room:
                 return i
 
     async def makeOwner(self, uid):
-        await send(transferOwnership(self.bot.messageId, uid), self.bot.ws)
+        await self.bot.connection.send(transferOwnership(self.bot.messageId, uid))
 
     async def kickUser(self, uid):
-        await send(kick(self.bot.messageId, uid), self.bot.ws)
+        await self.bot.connection.send(kick(self.bot.messageId, uid))
 
     async def startGame(self):
-        await send(startRoom(self.bot.messageId), self.bot.ws)
+        await self.bot.connection.send(startRoom(self.bot.messageId))
 
     async def send(self, message):
-        await send(chat(message, self.bot.messageId), self.bot.ws)
+        await self.bot.connection.send(chat(message, self.bot.messageId))
 
     async def updateConfig(self, data):
         _data = []
         for opt in data:
             _data.append({'index': opt[0], 'value': opt[1]})
-        await send(updateConfig(self.bot.messageId, data), self.bot.ws)
+        await self.bot.connection.send(updateConfig(self.bot.messageId, data))
 
     def getBots(self):
         res = []
