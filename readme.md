@@ -9,7 +9,7 @@ A simple python library for interacting with the [Tetr.io](https://tetr.io/) API
 ## contents
 
 - [About](#About)
-- [Instalation](#Instalation)
+- [Installation](#Installation)
 - [Documentation](#Documentation)
 - [Examples](#Examples)
 - [Contribution](#Contribution)
@@ -20,7 +20,7 @@ A simple python library for interacting with the [Tetr.io](https://tetr.io/) API
 
 This library is a simple wrapper around the [Tetr.io](https://tetr.io/) API. It uses trio to provide a simple async interface.
 
-## Instalation
+## Installation
 
 ### installing from pip
 
@@ -101,7 +101,7 @@ async def start(room):
     delay = 20 # seconds
     needed = 2 # players
     if len(room.getPlaying()) >= needed:
-        await room.send(f'Starting in {d} seconds!')
+        await room.send(f'Starting in {delay} seconds!')
         await trio.sleep(delay)
         if len(room.getPlaying()) >= needed:
             await room.startGame()
