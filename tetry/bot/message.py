@@ -74,7 +74,7 @@ def unpackBatchTag(data):
 
 def unpackExtractedId(data):
     id = data[:4]
-    res = msgpack.unpackb(data[4:], raw=False)
+    res = msgpack.unpackb(data[4:])
     id = struct.unpack('!I', id)[0]
     return (id, res)
 
@@ -85,7 +85,7 @@ def unpack(data):
     prefix = data[0]
     d = data[1:]
     if prefix == 0x45:
-        d = msgpack.unpackb(d, raw=False)
+        d = msgpack.unpackb(d)
     elif prefix == 0x58:
         d = unpackBatchTag(d)
     elif prefix == 0xAE:

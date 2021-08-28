@@ -99,6 +99,7 @@ class Bot:
     async def recconect(self, endpoint=None):
         await self.connection.close()
         endpoint = endpoint or self.connection.endpoint
+        self.serverId = 1
         await reconnect(endpoint, self.sockid, self.resume, self.nurs, self)
 
     async def _run(self):

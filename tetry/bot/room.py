@@ -1,5 +1,5 @@
 from .commands import (chat, kick, leaveRoom, startRoom, switchBracket,
-                       switchBracketHost, transferOwnership, updateConfig)
+                       switchBracketHost, transferOwnership, updateConfig, clearChat)
 from .urls import room
 
 
@@ -61,6 +61,9 @@ class Room:
         for opt in data:
             _data.append({'index': opt[0], 'value': opt[1]})
         await self.bot.connection.send(updateConfig(self.bot.messageId, data))
+
+    async def clearChat(self):
+        await self.bot.connection.send(clearChat)
 
     def getBots(self):
         res = []

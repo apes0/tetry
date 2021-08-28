@@ -2,6 +2,10 @@ new = {
     'command': 'new'
 }
 
+clearChat = {
+    'command': 'clearchat'
+}
+
 
 def authorize(msgid: int, token: str, handling: dict, commit: str):
     return {

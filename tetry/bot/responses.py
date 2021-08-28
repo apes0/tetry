@@ -98,8 +98,7 @@ async def kick(_bot, msg, _caller):
 
 
 async def nope(_bot, msg, _caller):
-    print(msg)
-    raise BaseException(msg['data']['reason'])
+    raise BaseException(f'server noped out: {msg["reason"]}')
 
 
 async def endmulti(bot, _msg, _caller):  # end of game

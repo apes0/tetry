@@ -79,10 +79,9 @@ def logServer(msg, ws):
 
 async def send(data, connection):
     ws = connection.ws
-    print(ws, type(ws))
     sendEv = connection.sendEv
     await sendEv.trigger(ws.nurs, data, ws, blocking=True)
-#    print(f'^  {data}')
+    print(f'^  {data}')
     data = pack(data)
 #    print(data)
     await ws.send_message(data)
@@ -113,8 +112,9 @@ def getRibbon(token):
 #             heartbeat()
 # connect to a websocket and start a reciver and a heartbeat proccess
 class Connection:
-    def __init__(self, bot, endpoint=None):
+    def __init__(self, bot, endpoint=None, reconnected=False):
         self.bot = bot
+        self.reconnected = reconnected
         self.pending = {}  # pending messages
         self.ws = None
         self.endpoint = endpoint
@@ -144,29 +144,33 @@ class Connection:
 
     async def connect(self, nurs):
         token = self.bot.token
-        ribbon = getRibbon(token)
+        ribbon = self.endpoint or getRibbon(token)
         ws = await connect_websocket_url(nurs, ribbon)  # connect to ribbon
         ws.nurs = nurs
         ws.bot = self.bot
         self.ws = ws
         self.bot.connection = self
         self.endpoint = ribbon
+        if not self.reconnected:
+            await self.send(new)
         await self.conn.trigger(nurs, self.bot)
 
     async def close(self):
         if not self.closed:
             await self.ws.aclose()
+            self.closed = True
 
     async def reciver(self, _bot):
-        while True:
+        while not self.closed:
+            ws = self.ws
             try:
-                ws = self.ws
                 res = await ws.get_message()
     #            print(res)
             except:
-                return  # disconnected
+                self.closed = True
+                return
             res = unpack(res)
-    #        print(f'v  {res}')
+            print(f'v  {res}')
             logger.info(f'recived {res}')
             await self._message.trigger(ws.nurs, ws, res)
 
@@ -195,19 +199,15 @@ class Connection:
             log(msg, ws)  # log the message
 
     async def heartbeat(self, bot):
-        await self.send(new)
-        while True:
+        while not self.closed:
+            await self.send(ping)
+            # note the time for the last sent ping, used to calculate the ping when we recive a pong
+            bot.lastPing = time.time()
             await trio.sleep(bot.pingInterval)
-            try:
-                await self.send(ping)
-                # note the time for the last sent ping, used to calculate the ping when we recive a pong
-                bot.lastPing = time.time()
-            except:
-                return  # disconnected
 
     async def msgHandle(self, ws, msg):
         bot = ws.bot
-        if msg == b'\x0c':  # ping
+        if msg == b'\x0c':  # pong
             ping = time.time() - bot.lastPing  # calculate the time it took to recive a pong
             bot.ping = ping
             await bot._trigger('pinged', ping)
