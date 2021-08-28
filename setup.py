@@ -23,7 +23,7 @@ setup(
         'Tracker': f'{source}/issues',
     },
     packages=find_packages(
-        include=['tetry', 'tetry.api', 'tetry.oldApi', 'tetry.bot', 'tetry.bot.engine']),
+        include=['tetry', 'tetry.api', 'tetry.oldApi', 'tetry.bot', ]),
     version=__version__,
     description='tetr.io api wrapper',
     long_description=readme,

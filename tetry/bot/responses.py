@@ -1,32 +1,18 @@
 import logging
 
-from trio_websocket import connect_websocket_url
 
 from .friend import Friend
 from .chatMessage import ChatMessage
 from .commands import authorize as _authorize
-from .commands import hello as _hello
-from .commands import resume
 from .dm import Dm
 from .frame import Frame
 from .game import Game
 from .invite import Invite
-from .ribbons import conn, send
 from .room import Room
 from .notification import Notification
+from ..api.commitId import getCommit
 
 logger = logging.getLogger(__name__)
-
-
-async def _reconnect(ws, sockid, resumeToken, nurs, bot):
-    ws = await connect_websocket_url(nurs, ws)
-    ws.nurs = nurs
-    ws.bot = bot
-    bot.ws = ws
-    await conn.trigger(nurs, bot)
-    await send(resume(sockid, resumeToken), ws)  # resume message
-    # hello message
-    await send(_hello([message.message for message in bot.messages]), ws)
 
 
 async def hello(bot, msg, caller):
@@ -35,12 +21,12 @@ async def hello(bot, msg, caller):
     messages = msg['packets']
     if not messages:
         # authorize message
-        await send(_authorize(bot.messageId, bot.token, bot.handling), bot.ws)
+        await bot.connection.send(_authorize(bot.messageId, bot.token, bot.handling, getCommit()))
     # get the ids for the seen messages
     seenIds = [m.message['id'] for m in bot.serverMessages]
     for m in messages:
         if m['id'] not in seenIds:
-            await caller(bot.ws, m)  # handle every unseen message
+            await caller(bot.connection.ws, m)  # handle every unseen message
 
 
 async def authorize(bot, msg, _caller):
@@ -58,9 +44,9 @@ async def authorize(bot, msg, _caller):
 
 
 async def migrate(bot, msg, _caller):
-    await bot.ws.aclose()  # close the connection to the websocket
+    await bot.connection.close()  # close the connection to the websocket
     ws = msg['data']['endpoint']  # get the new endpoint
-    await _reconnect(ws, bot.sockid, bot.resume, bot.nurs, bot)  # reconnect
+    await bot.recconect(ws)  # reconnect
 
 
 async def migrated(bot, msg, _caller):
@@ -112,7 +98,7 @@ async def kick(_bot, msg, _caller):
 
 
 async def nope(_bot, msg, _caller):
-    raise BaseException(msg['data']['reason'])
+    raise BaseException(f'server noped out: {msg["reason"]}')
 
 
 async def endmulti(bot, _msg, _caller):  # end of game

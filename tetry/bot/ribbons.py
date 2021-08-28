@@ -1,26 +1,87 @@
 import logging
+import time
 
 import requests
+import trio
 from trio_websocket import connect_websocket_url
 
+from . import responses
+from .commands import new, ping
 from .events import Event
 from .message import pack, unpack
-from .urls import enviorment, me, ribbon
+from .urls import me, ribbon
 
 logger = logging.getLogger(__name__)
 
 
-def getCommit():
-    json = requests.get(enviorment).json()
-    return json['signature']['commit']['id']
+async def msgHandle(ws, msg):
+    bot = ws.bot
+    if isinstance(msg, tuple):  # if the message has an id
+        id = msg[0]
+        bot.serverId += 1
+        msg = msg[1]
+        msg['id'] = id
+        logServer(msg, ws)
+    if isinstance(msg, list):  # multiple messages that should be handled
+        for m in msg:
+            await msgHandle(ws, m)
+        return
+#    print(f'parsing command {msg["command"]}')
+    comm = msg['command'].split('.')[0]
+#    print(comm)
+    logger.info(f'got {comm} command')
+    try:
+        func = responses.__dict__[comm]
+    except:
+        logger.info(f'unrecognized command {comm}')
+        return
+#    print(comm, func)
+    await func(bot, msg, msgHandle)
 
 
-sendEv = Event('sendEv', errorEvent=False)
+class Message:
+    def __init__(self, message):
+        self.time = time.time()
+        self.id = message['id']
+        self.message = message
+
+    def checkTime(self, t):
+        return time.time() - self.time >= t
 
 
-async def send(data, ws):
+def log(msg, ws):
+    bot = ws.bot
+    messages = bot.messages
+    messages.append(Message(msg))  # log the new message
+    logFor = 30  # seconds
+    for message in messages:
+        remove = message.checkTime(logFor)
+        if remove:
+            messages.pop(0)  # remove the first message if needed
+        else:
+            break
+    bot.messages = messages
+
+
+def logServer(msg, ws):
+    #    print(f'logging message {msg}')
+    bot = ws.bot
+    messages = bot.serverMessages
+    messages.append(Message(msg))  # log the new message
+    logFor = 30  # seconds
+    for message in messages:
+        if message.checkTime(logFor):
+            messages.pop(0)  # remove the first message if needed
+        else:
+            break
+    bot.serverMessages = messages
+
+
+async def send(data, connection):
+    ws = connection.ws
+    sendEv = connection.sendEv
     await sendEv.trigger(ws.nurs, data, ws, blocking=True)
-#    print(f'^  {data}')
+    print(f'^  {data}')
     data = pack(data)
 #    print(data)
     await ws.send_message(data)
@@ -46,56 +107,110 @@ def getRibbon(token):
     else:
         raise BaseException(json['errors'][0]['msg'])
 
+
 # connect ->  receiver()
 #             heartbeat()
 # connect to a websocket and start a reciver and a heartbeat proccess
+class Connection:
+    def __init__(self, bot, endpoint=None, reconnected=False):
+        self.bot = bot
+        self.reconnected = reconnected
+        self.pending = {}  # pending messages
+        self.ws = None
+        self.endpoint = endpoint
+        self.closed = False
 
+        # events
+        sendEv = Event('sendEv', errorEvent=False)
+        self.sendEv = sendEv
+        conn = Event('conn', errorEvent=False)
+        self.conn = conn
+        # message event afetr sorting
+        message = Event('message', errorEvent=False)
+        self.message = message
+        _message = Event('_message', errorEvent=False)  # message event
+        self._message = _message
 
-conn = Event('conn', errorEvent=False)
+        # add event listeners
 
+        _message.addListener(self.sortMessages)
+        conn.addListener(self.reciver)
+        sendEv.addListener(self.changeId)
+        conn.addListener(self.heartbeat)
+        message.addListener(self.msgHandle)
 
-async def connect(bot, nurs):
-    token = bot.token
-    ribbon = getRibbon(token)
-    ws = await connect_websocket_url(nurs, ribbon)  # connect to ribbon
-    ws.nurs = nurs
-    ws.bot = bot
-    bot.ws = ws
-    nurs.start_soon(conn.trigger, nurs, bot)
+    async def send(self, data):
+        await send(data, self)
 
-_message = Event('_message', errorEvent=False)  # message event
-message = Event('message', errorEvent=False)  # message event afetr sorting
+    async def connect(self, nurs):
+        token = self.bot.token
+        ribbon = self.endpoint or getRibbon(token)
+        ws = await connect_websocket_url(nurs, ribbon)  # connect to ribbon
+        ws.nurs = nurs
+        ws.bot = self.bot
+        self.ws = ws
+        self.bot.connection = self
+        self.endpoint = ribbon
+        if not self.reconnected:
+            await self.send(new)
+        await self.conn.trigger(nurs, self.bot)
 
-pending = {}
+    async def close(self):
+        if not self.closed:
+            await self.ws.aclose()
+            self.closed = True
 
+    async def reciver(self, _bot):
+        while not self.closed:
+            ws = self.ws
+            try:
+                res = await ws.get_message()
+    #            print(res)
+            except:
+                self.closed = True
+                return
+            res = unpack(res)
+            print(f'v  {res}')
+            logger.info(f'recived {res}')
+            await self._message.trigger(ws.nurs, ws, res)
 
-@_message.addListener
-async def sortMessages(ws, res):
-    if not isinstance(res, tuple):
-        await message.trigger(ws.nurs, ws, res)
-        return
-    bot = ws.bot
-    sid = bot.serverId
-    id = res[0]
-    pending[id] = res
-#    print(id, sid, res)
-    while sid in pending.keys():
-        msg = pending[sid]
-        await message.trigger(ws.nurs, ws, msg)
-        del pending[sid]
-        sid += 1
+    async def sortMessages(self, ws, res):
+        if not isinstance(res, tuple):
+            await self.message.trigger(ws.nurs, ws, res)
+            return
+        bot = ws.bot
+        sid = bot.serverId
+        id = res[0]
+        self.pending[id] = res
+    #    print(id, sid, res)
+        while sid in self.pending.keys():
+            msg = self.pending[sid]
+            await self.message.trigger(ws.nurs, ws, msg)
+            del self.pending[sid]
+            sid += 1
 
+    # change the messageId for the bot if there is an id in the message we are sending
 
-@conn.addListener
-async def reciver(bot):
-    while True:
-        try:
-            ws = bot.ws
-            res = await ws.get_message()
-#            print(res)
-        except:
-            return  # disconnected
-        res = unpack(res)
-#        print(f'v  {res}')
-        logger.info(f'recived {res}')
-        await _message.trigger(ws.nurs, ws, res)
+    async def changeId(self, msg, ws):
+        if isinstance(msg, bytes):
+            return
+        if 'id' in msg:
+            ws.bot.messageId += 1
+            log(msg, ws)  # log the message
+
+    async def heartbeat(self, bot):
+        while not self.closed:
+            await self.send(ping)
+            # note the time for the last sent ping, used to calculate the ping when we recive a pong
+            bot.lastPing = time.time()
+            await trio.sleep(bot.pingInterval)
+
+    async def msgHandle(self, ws, msg):
+        bot = ws.bot
+        if msg == b'\x0c':  # pong
+            ping = time.time() - bot.lastPing  # calculate the time it took to recive a pong
+            bot.ping = ping
+            await bot._trigger('pinged', ping)
+            return
+        await msgHandle(ws, msg)
+    #    print(msg)

@@ -3,9 +3,7 @@ import math
 import trio
 
 from .commands import replay
-from .engine import Game as _Game
-from .engine import pieces, spawnLocation
-from .ribbons import send
+from .pieceRng import Rng
 
 
 class Game:
@@ -23,17 +21,25 @@ class Game:
         self.pendingFrames = []
         self.opts = data['options']
         self.seed = self.opts['seed']
-        self.game = _Game(self.opts, self.seed, self.bot)
-        self.bag = self.game.bag
+        self.rng = Rng(self.seed)
+        self.bag = self.rng.getBag()
+        self.firstBag = self.bag.copy()
         self.started = data['started']
         self.lastKickRun = data['lastKickRun']
         self.replay = {}
         self.igeId = 0
 
+    def getPiece(self):
+        if self.bag:
+            return self.bag.pop(0)
+        bag = self.rng.getBag()
+        self.bag = bag
+        return bag[0]
+
     def _acceptGarbage(self, data):
         f = self.getFrame()
         frame = f['frame']
-        # print(frame, data['data']['sent_frame'], data['targetFrame'])
+        print(frame, data['data']['sent_frame'], data['targetFrame'])
         frame = {'frame': frame, 'type': 'ige', 'data':
                  {
                      'id': self.igeId,
@@ -56,42 +62,6 @@ class Game:
         frame = passed*60
         return {'frame': math.floor(frame), 'subframe': frame % 1}
 
-    def press(self, key, frame=None):
-        f = frame or self.getFrame()
-        frame = f['frame']
-        subframe = f['subframe']
-        frame = {'frame': frame, 'type': 'keydown', 'data':
-                 {
-                     'key': key,
-                     'subframe': subframe,
-                 }
-                 }
-        self.pendingFrames.append(frame)
-
-    def hold(self, key, frames):
-        frame = self.getFrame()
-        self.press(key)
-        frame['frame'] += frames
-        self.release(key)
-
-    def move(self, key, x, rate=1):
-        frame = self.getFrame()
-        for _ in range(x):
-            frame['frame'] += rate
-            self.press(key, frame=frame)
-
-    def release(self, key, frame=None):
-        f = frame or self.getFrame()
-        frame = f['frame']
-        subframe = f['subframe']
-        frame = {'frame': frame, 'type': 'keyup', 'data':
-                 {
-                     'key': key,
-                     'subframe': subframe,
-                 }
-                 }
-        self.pendingFrames.append(frame)
-
     async def _start(self):  # send a full frame
         opts = {**self.opts, **self.context['opts'],
                 'physical': True, 'username': self.bot.name}
@@ -103,7 +73,7 @@ class Game:
                     'options': opts,
                     'game': {
                         'board': [[None]*10]*40,
-                        'bag': self.bag,
+                        'bag': self.firstBag,
                         'hold': {'piece': None, 'locked': False},
                         'playing': True,
                         'g': self.opts['g'],
@@ -124,24 +94,8 @@ class Game:
                 'frame': 0,
                 'type': 'full'
             })
-        self.pendingFrames.append(
-            {'frame': 0, 'type': 'start', 'data': {}}
-        )
-        self.pendingFrames.append(
-            {'frame': 0, 'type': 'targets', 'data': {
-                'id': 'diyusi', 'frame': 0,
-                'type': 'targets', 'data': []
-            }
-            }
-        )
-
 #        await send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame), self.bot.ws)
 #        self.pendingFrames = []
-
-    def getNextPiece(self):
-        if not len(self.bag):
-            self.bag = self.game.getBag()
-        return self.bag.pop(0)
 
     async def start(self):
         t = trio.current_time()
@@ -153,5 +107,5 @@ class Game:
             t += d/60
             frame += d
             await trio.sleep_until(t)
-            await send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame), self.bot.ws)
+            await self.bot.connection.send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame))
             self.pendingFrames = []

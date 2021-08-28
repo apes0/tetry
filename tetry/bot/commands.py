@@ -1,11 +1,13 @@
-from .ribbons import getCommit
-
 new = {
     'command': 'new'
 }
 
+clearChat = {
+    'command': 'clearchat'
+}
 
-def authorize(msgid: int, token: str, handling: dict):
+
+def authorize(msgid: int, token: str, handling: dict, commit: str):
     return {
         'id': msgid,
         'command': 'authorize',
@@ -14,7 +16,7 @@ def authorize(msgid: int, token: str, handling: dict):
             'handling': handling,
             'signature': {
                 'commit': {
-                    'id': getCommit()
+                    'id': commit
                 }
             }
         }
