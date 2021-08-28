@@ -81,7 +81,7 @@ async def send(data, connection):
     ws = connection.ws
     sendEv = connection.sendEv
     await sendEv.trigger(ws.nurs, data, ws, blocking=True)
-    print(f'^  {data}')
+#    print(f'^  {data}')
     data = pack(data)
 #    print(data)
     await ws.send_message(data)
@@ -170,7 +170,7 @@ class Connection:
                 self.closed = True
                 return
             res = unpack(res)
-            print(f'v  {res}')
+#            print(f'v  {res}')
             logger.info(f'recived {res}')
             await self._message.trigger(ws.nurs, ws, res)
 

@@ -39,7 +39,7 @@ class Game:
     def _acceptGarbage(self, data):
         f = self.getFrame()
         frame = f['frame']
-        print(frame, data['data']['sent_frame'], data['targetFrame'])
+        # print(frame, data['data']['sent_frame'], data['targetFrame'])
         frame = {'frame': frame, 'type': 'ige', 'data':
                  {
                      'id': self.igeId,
