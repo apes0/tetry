@@ -39,12 +39,12 @@ class Game:
     def _acceptGarbage(self, data):
         f = self.getFrame()
         frame = f['frame']
-        # print(frame, data['data']['sent_frame'], data['targetFrame'])
+#        print(frame, data['data']['sent_frame'], data['targetFrame'])
         frame = {'frame': frame, 'type': 'ige', 'data':
                  {
                      'id': self.igeId,
                      'type': 'ige',
-                     'frame': data['data']['sent_frame'],
+                     'frame': frame,
                      'data': {
                          'type': 'attack',
                          'lines': data['data']['lines'],
@@ -106,6 +106,7 @@ class Game:
         while self.bot.room.inGame:
             t += d/60
             frame += d
+#            print(frame, self.getFrame())
             await trio.sleep_until(t)
             await self.bot.connection.send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame))
             self.pendingFrames = []
