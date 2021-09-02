@@ -7,6 +7,9 @@ with open('requirements.txt') as f:
     requirements = f.read()
 
 __version__ = ''
+__licence__ = ''
+__author__ = ''
+__name__ = ''
 
 with open('tetry/__init__.py') as f:
     for line in f.read().splitlines():
@@ -17,7 +20,8 @@ source = 'https://github.com/apes0/tetry'
 
 setup(
     url=source,
-    name='tetry',
+    name=__name__,
+    license=__licence__,
     project_urls={
         'Source': source,
         'Tracker': f'{source}/issues',
@@ -28,7 +32,7 @@ setup(
     description='tetr.io api wrapper',
     long_description=readme,
     long_description_content_type='text/markdown',
-    author='apes0',
+    author=__author__,
     python_requires='>=3',
     install_requires=requirements
 )
