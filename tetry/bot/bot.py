@@ -145,9 +145,9 @@ class Bot:
         # presence message
         await self.connection.send(presence(self.messageId, status, detail))
 
-    async def notificationAck(self, id=None):
+    async def notificationAck(self, notif=None):
         # notification ack message
-        await self.connection.send(notificationAck(id))
+        await self.connection.send(notificationAck(notif))
 
     def addFriend(self, uid=None, name=None):
         if not uid and name:

@@ -29,10 +29,10 @@ def extensionTag(data):
     return prefix + data  # just prefix + binary data
 
 
-def extractedId(data, id):
+def extractedId(data, msgId):
     prefix = b'\xAE'
-    id = struct.pack('!I', id)
-    return prefix + id + msgpack.packb(data)
+    msgId = struct.pack('!I', msgId)
+    return prefix + msgId + msgpack.packb(data)
 
 
 # pack data
@@ -73,10 +73,10 @@ def unpackBatchTag(data):
 
 
 def unpackExtractedId(data):
-    id = data[:4]
+    msgId = data[:4]
     res = msgpack.unpackb(data[4:])
-    id = struct.unpack('!I', id)[0]
-    return (id, res)
+    msgId = struct.unpack('!I', msgId)[0]
+    return (msgId, res)
 
 
 # unpack data

@@ -7,9 +7,9 @@ clearChat = {
 }
 
 
-def authorize(msgid: int, token: str, handling: dict, commit: str):
+def authorize(msgId: int, token: str, handling: dict, commit: str):
     return {
-        'id': msgid,
+        'id': msgId,
         'command': 'authorize',
         'data': {
             'token': token,
@@ -30,10 +30,10 @@ die = {
 ping = b'\x0B'
 
 
-def presence(id, status: str, detail: str):
+def presence(msgId, status: str, detail: str):
     return {
         'command': 'social.presence',
-        'id': id,
+        'id': msgId,
         'data': {
             'status': status,
             'detail': detail
@@ -41,21 +41,21 @@ def presence(id, status: str, detail: str):
     }
 
 
-def joinroom(room: str, id: int):
+def joinroom(room: str, roomId: int):
     return {
-        'id': id,
+        'id': roomId,
         'command': 'joinroom',
         'data': room
     }
 
 
-def createroom(public: bool, id: int):
+def createroom(public: bool, msgId: int):
     if public:
         public = 'public'
     else:
         public = 'private'
     return {
-        'id': id,
+        'id': msgId,
         'command': 'createroom',
         'data': public
     }
@@ -76,25 +76,25 @@ def hello(msgs: list):
     }
 
 
-def chat(msg: str, id: int):
+def chat(msg: str, msgId: int):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'chat',
         'data': msg
     }
 
 
-def switchBracket(id: int, bracket: str):
+def switchBracket(msgId: int, bracket: str):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'switchbracket',
         'data': bracket
     }
 
 
-def switchBracketHost(id: int, bracket: str, uid: str):
+def switchBracketHost(msgId: int, bracket: str, uid: str):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'switchbrackethost',
         'data': {
             'uid': uid,
@@ -103,67 +103,67 @@ def switchBracketHost(id: int, bracket: str, uid: str):
     }
 
 
-def leaveRoom(id):
+def leaveRoom(msgId):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'leaveroom',
         'data': False
     }
 
 
-def transferOwnership(id, uid):
+def transferOwnership(msgId, uid):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'transferownership',
         'data': uid
     }
 
 
-def kick(id, uid):
+def kick(msgId, uid):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'kick',
         'data': uid
     }
 
 
-def startRoom(id):
+def startRoom(msgId):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'startroom',
         'data': None
     }
 
 
-def updateConfig(id, data):
+def updateConfig(msgId, data):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'updateconfig',
         'data': data
     }
 
 
-def replay(id, frames, listenId, frame):
+def replay(msgId, frames, listenId, frame):
     return {
         'command': 'replay',
         'data': {'frames': frames,
                  'listenID': listenId,
                  'provisioned': frame},
-        'id': id
+        'id': msgId
     }
 
 
-def invite(id, uid):
+def invite(msgId, uid):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'social.invite',
         'data': uid
     }
 
 
-def dm(id, uid, msg):
+def dm(msgId, uid, msg):
     return {
-        'id': id,
+        'id': msgId,
         'command': 'social.dm',
         'data': {
             'recipient': uid,
@@ -172,8 +172,8 @@ def dm(id, uid, msg):
     }
 
 
-def notificationAck(id):
+def notificationAck(notif):
     msg = {'command': 'social.notifications.ack'}
-    if id:
-        msg['data'] = id
+    if notif:
+        msg['data'] = notif
     return msg

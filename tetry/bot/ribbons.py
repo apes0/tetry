@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 async def msgHandle(ws, msg):
     bot = ws.bot
     if isinstance(msg, tuple):  # if the message has an id
-        id = msg[0]
+        msgId = msg[0]
         bot.serverId += 1
         msg = msg[1]
-        msg['id'] = id
+        msg['id'] = msgId
         logServer(msg, ws)
     if isinstance(msg, list):  # multiple messages that should be handled
         for m in msg:
@@ -183,16 +183,16 @@ class Connection:
             return
         bot = ws.bot
         sid = bot.serverId
-        id = res[0]
-        if id == sid + 1:
+        msgId = res[0]
+        if msgId == sid + 1:
             await self.message.trigger(ws.nurs, ws, res)
-            id += 1
+            msgId += 1
         else:
-            self.pending[id] = res
-        while (msg := self.pending.get(id)):
+            self.pending[msgId] = res
+        while (msg := self.pending.get(msgId)):
             await self.message.trigger(ws.nurs, ws, msg)
-            del self.pending[id]
-            id += 1
+            del self.pending[msgId]
+            msgId += 1
 
     async def changeId(self, msg, ws):
         if isinstance(msg, bytes):

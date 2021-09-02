@@ -39,8 +39,7 @@ class Room:
 
     def _getIndex(self, id):
         players = self.players
-        for i in range(len(players)):
-            player = players[i]
+        for i, player in enumerate(players):
             if player['_id'] == id:
                 return i
 
