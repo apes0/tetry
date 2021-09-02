@@ -140,7 +140,10 @@ class Connection:
         message.addListener(self.msgHandle)
 
     async def send(self, data):
-        await send(data, self)
+        try:
+            await send(data, self)
+        except:
+            self.closed = True
 
     async def connect(self, nurs):
         token = self.bot.token
@@ -181,15 +184,15 @@ class Connection:
         bot = ws.bot
         sid = bot.serverId
         id = res[0]
-        self.pending[id] = res
-    #    print(id, sid, res)
-        while sid in self.pending.keys():
-            msg = self.pending[sid]
+        if id == sid + 1:
+            await self.message.trigger(ws.nurs, ws, res)
+            id += 1
+        else:
+            self.pending[id] = res
+        while (msg := self.pending.get(id)):
             await self.message.trigger(ws.nurs, ws, msg)
-            del self.pending[sid]
-            sid += 1
-
-    # change the messageId for the bot if there is an id in the message we are sending
+            del self.pending[id]
+            id += 1
 
     async def changeId(self, msg, ws):
         if isinstance(msg, bytes):
