@@ -3,7 +3,7 @@ import time
 
 import requests
 import trio
-from trio_websocket import connect_websocket_url
+from trio_websocket import connect_websocket_url, ConnectionClosed
 
 from . import responses
 from .commands import new, ping
@@ -119,6 +119,7 @@ class Connection:
         self.ws = None
         self.endpoint = endpoint
         self.closed = False
+        self.nurs = None
 
         # events
         sendEv = Event('sendEv', errorEvent=False)
@@ -140,16 +141,14 @@ class Connection:
         message.addListener(self.msgHandle)
 
     async def send(self, data):
-        try:
-            await send(data, self)
-        except:
-            self.closed = True
+        await send(data, self)
 
     async def connect(self, nurs):
         token = self.bot.token
         ribbon = self.endpoint or getRibbon(token)
         ws = await connect_websocket_url(nurs, ribbon)  # connect to ribbon
         ws.nurs = nurs
+        self.nurs = nurs
         ws.bot = self.bot
         self.ws = ws
         self.bot.connection = self
@@ -169,7 +168,7 @@ class Connection:
             try:
                 res = await ws.get_message()
     #            print(res)
-            except:
+            except ConnectionClosed:
                 self.closed = True
                 return
             res = unpack(res)

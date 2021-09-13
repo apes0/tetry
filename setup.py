@@ -33,6 +33,6 @@ setup(
     long_description=readme,
     long_description_content_type='text/markdown',
     author=__author__,
-    python_requires='>=3',
+    python_requires='>=3.6',
     install_requires=requirements
 )

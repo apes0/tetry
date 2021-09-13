@@ -12,9 +12,11 @@ class Game:
         self.first = data['first']
         self.contexts = {ctx['user']['_id']: ctx
                          for ctx in data['contexts']}
-        self.context = self.contexts[bot.id]
+        self.context = self.contexts.get(bot.id)
+        self.playing = self.context != None
         self.members = list(self.contexts.keys())
-        self.listedId = self.context['listenID']
+        if self.playing:
+            self.listedId = self.context['listenID']
         self.room = bot.room
         self.bot = bot
         self.startTime = 0
@@ -62,6 +64,17 @@ class Game:
         frame = passed*60
         return {'frame': math.floor(frame), 'subframe': frame % 1}
 
+    def target(self, *users):
+        self.pendingFrames.append(
+            {
+                'data': {
+                    'id': 'diyusi',
+                    'type': 'targets'
+                },
+
+            }
+        )
+
     async def _start(self):  # send a full frame
         opts = {**self.opts, **self.context['opts'],
                 'physical': True, 'username': self.bot.name}
@@ -94,6 +107,13 @@ class Game:
                 'frame': 0,
                 'type': 'full'
             })
+        self.pendingFrames.append(
+            {
+                'data': {},
+                'frame': 0,
+                'type': 'start'
+            }
+        )
 #        await send(replay(self.bot.messageId, self.pendingFrames, self.gameId, frame), self.bot.ws)
 #        self.pendingFrames = []
 

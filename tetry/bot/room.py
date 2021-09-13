@@ -53,7 +53,7 @@ class Room:
         await self.bot.connection.send(startRoom(self.bot.messageId))
 
     async def send(self, message):
-        await self.bot.connection.send(chat(message, self.bot.messageId))
+        await self.bot.connection.send(chat(str(message), self.bot.messageId))
 
     async def updateConfig(self, data):
         _data = []

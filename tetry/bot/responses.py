@@ -54,8 +54,9 @@ async def migrated(bot, msg, _caller):
     await bot._trigger('migrated', bot.worker)
 
 
-async def err(_bot, msg, _caller):
+async def err(bot, msg, _caller):
     logger.error(msg['data'])  # log the error
+    bot._trigger('error', msg['data'])  # trigger the error event
 
 
 async def gmupdate(bot, msg, _caller):
@@ -135,7 +136,7 @@ async def readymulti(bot, msg, _caller):  # data for the game before it starts
 async def social(bot, msg, _caller):
     comm = msg['command']
     coms = comm.split('.')  # command and its subcommands
-    subcomm = ''.join(coms[1:])
+    subcomm = coms[1]
     if subcomm == 'invite':
         await bot._trigger('invited', Invite(msg['data'], bot))
     elif subcomm == 'online':
@@ -148,6 +149,18 @@ async def social(bot, msg, _caller):
         notif = Notification(msg['data'], bot)
         await bot._trigger('notification', notif)
         bot.notifications.append(notif)
+    elif subcomm.startswith('relationship'):
+        comm = coms[2]
+        if comm == 'remove':
+            fid = msg['data']  # id of the friend (not the user's id)
+            for friend in bot.friends:  # find the friend
+                if friend._id == fid:
+                    bot.friends.remove(friend)  # remove the friend
+                    await bot._trigger('friendAdded', friend)
+        elif comm == 'add':
+            # add the friend
+            bot.friends.append((friend := Friend(msg['data'], bot)))
+            await bot._trigger('friendRemoved', friend)
 
 
 async def leaveroom(bot, msg, _caller):

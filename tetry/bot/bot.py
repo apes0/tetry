@@ -37,7 +37,10 @@ events = [
     'invited',  # called when you get invited to join a room, you can accept or ignore the invite
     'dm',  # called when you get a dm
     'migrated',  # called when the bot migrates to another worker
-    'notification'  # called when the bot recives a notification
+    'notification',  # called when the bot recives a notification
+    'error',  # called when there is an error
+    'friendAdded',  # called when a friend is added
+    'friendRemoved',  # called when a friend is removed
 ]
 
 
@@ -85,22 +88,40 @@ class Bot:
     def run(self):
         trio.run(self._run)
 
+    async def waitFor(self, event):
+        event = self.events[event]
+        ev = trio.Event()
+
+        def finish(*args):
+            ev.result = args
+            ev.set()
+
+        event.addListener(finish)
+        await ev.wait()
+        event.removeListener(finish)
+        return ev.result  # FIXME: use a memory channel
+
     async def joinRoom(self, code: str):
         code = code.upper()
-        if self.room != None:
+        if self.room:
             await self.room.leave()
         # joinroom message
         await self.connection.send(joinroom(code, self.messageId))
+        data = await self.waitFor('joinedRoom')
+        return data[0]
 
     async def createRoom(self, public: bool):
         # createroom message
         await self.connection.send(createroom(public, self.messageId))
+        data = await self.waitFor('joinedRoom')
+        return data[0]
 
     async def recconect(self, endpoint=None):
         await self.connection.close()
         endpoint = endpoint or self.connection.endpoint
         self.serverId = 1
         await reconnect(endpoint, self.sockid, self.resume, self.nurs, self)
+        await self.waitFor('migrated')
 
     async def _run(self):
         self.user = getInfo(self.token)  # get info for the current user
@@ -124,8 +145,10 @@ class Bot:
             name = name[3:]
         self.events[name].addListener(func)
 
-    def chatCommand(self, func):  # event decorator
-        self.commandBot.register(func)
+    def chatCommand(self, aliases=[], name=None):  # event decorator
+        def decorator(func):
+            self.commandBot.register(func=func, aliases=aliases, name=name)
+        return decorator
 
     async def stop(self):
         await self.connection.send(die)  # die message
@@ -134,6 +157,9 @@ class Bot:
         if not uid and name:
             uid = getId(name, self.token)
         await self.connection.send(dm(self.messageId, uid, msg))  # dm message
+        while (_dm := await self.waitFor('dm')).sender != self.id:
+            pass  # wait untill the sender is the bot
+        return _dm[0]
 
     async def invite(self, uid=None, name=None):
         if not uid and name:

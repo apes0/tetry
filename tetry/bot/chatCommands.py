@@ -29,11 +29,14 @@ class commandBot:
                 nurs = self.bot.nurs
                 await self.commands[comm].trigger(nurs, *args)
 
-    def register(self, func):
-        name = func.__name__
+    def register(self, func, aliases=[], name=None):
+        name = name or func.__name__
         if name not in self.commands:  # add the func as a listener if the command exists, else make an event for it
             event = Event(name)  # create an event for the command
             event.addListener(func)
             self.commands[name] = event
         else:
             self.commands[name].addListener(func)
+        for alias in aliases:
+            self.register(func, name=alias)
+        print(self.commands)

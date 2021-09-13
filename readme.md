@@ -66,7 +66,7 @@ from tetry import bot
 
 bot = bot.Bot(token='token', commandPrefix='>')
 
-@bot.chatCommand
+@bot.chatCommand()
 async def ping(_msg):
     await bot.room.send(f'The bot\'s ping is {round(bot.ping*1000, 2)}ms')
 
