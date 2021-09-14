@@ -5,8 +5,9 @@ import requests
 import trio
 from trio_websocket import connect_websocket_url, ConnectionClosed
 
+
 from . import responses
-from .commands import new, ping
+from .commands import new, ping, hello, resume
 from .events import Event
 from .message import pack, unpack
 from .urls import me, ribbon
@@ -112,9 +113,8 @@ def getRibbon(token):
 #             heartbeat()
 # connect to a websocket and start a reciver and a heartbeat proccess
 class Connection:
-    def __init__(self, bot, endpoint=None, reconnected=False):
+    def __init__(self, bot, endpoint=None):
         self.bot = bot
-        self.reconnected = reconnected
         self.pending = {}  # pending messages
         self.ws = None
         self.endpoint = endpoint
@@ -144,8 +144,13 @@ class Connection:
         await send(data, self)
 
     async def connect(self, nurs):
+        await self._connect(nurs)
+        await self.send(new)
+
+    async def _connect(self, nurs, endpoint=None):
+        self.closed = False
         token = self.bot.token
-        ribbon = self.endpoint or getRibbon(token)
+        ribbon = endpoint or getRibbon(token)
         ws = await connect_websocket_url(nurs, ribbon)  # connect to ribbon
         ws.nurs = nurs
         self.nurs = nurs
@@ -153,8 +158,6 @@ class Connection:
         self.ws = ws
         self.bot.connection = self
         self.endpoint = ribbon
-        if not self.reconnected:
-            await self.send(new)
         await self.conn.trigger(nurs, self.bot)
 
     async def close(self):
@@ -192,6 +195,13 @@ class Connection:
             await self.message.trigger(ws.nurs, ws, msg)
             del self.pending[msgId]
             msgId += 1
+
+    async def reconnect(self, ws, sockid, resumeToken):
+        await self.close()
+        await self._connect(self.nurs, ws)
+        await self.send(resume(sockid, resumeToken))  # resume message
+        # hello message
+        await self.send(hello([message.message for message in self.bot.messages]))
 
     async def changeId(self, msg, ws):
         if isinstance(msg, bytes):

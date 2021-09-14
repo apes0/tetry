@@ -12,7 +12,6 @@ from .dm import Dm
 from .events import Event
 from .ribbons import Connection, getInfo
 from .urls import dms, rooms, friend, unfriend
-from .reconnect import reconnect
 
 logger = logging.getLogger(__name__)
 
@@ -117,11 +116,9 @@ class Bot:
         return data[0]
 
     async def recconect(self, endpoint=None):
-        await self.connection.close()
         endpoint = endpoint or self.connection.endpoint
         self.serverId = 1
-        await reconnect(endpoint, self.sockid, self.resume, self.nurs, self)
-        await self.waitFor('migrated')
+        await self.connection.reconnect(endpoint, self.sockid, self.resume)
 
     async def _run(self):
         self.user = getInfo(self.token)  # get info for the current user
