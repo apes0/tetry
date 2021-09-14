@@ -21,6 +21,9 @@ class Friend:
     def getInfo(self):
         return getUser(self.id)
 
+    def unfriend(self):
+        self.bot.removeFriend(uid=self.id)
+
     async def dm(self, message):
         await self.bot.dm(message, uid=self.id)
 
@@ -28,4 +31,4 @@ class Friend:
         return self.bot.getDms(self.id)
 
     async def invite(self):
-        return self.bot.invite(uid=self.id)
+        await self.bot.invite(uid=self.id)
