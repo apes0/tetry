@@ -15,31 +15,6 @@ from .urls import me, ribbon
 logger = logging.getLogger(__name__)
 
 
-async def msgHandle(ws, msg):
-    bot = ws.bot
-    if isinstance(msg, tuple):  # if the message has an id
-        msgId = msg[0]
-        bot.serverId += 1
-        msg = msg[1]
-        msg['id'] = msgId
-        logServer(msg, ws)
-    if isinstance(msg, list):  # multiple messages that should be handled
-        for m in msg:
-            await msgHandle(ws, m)
-        return
-#    print(f'parsing command {msg["command"]}')
-    comm = msg['command'].split('.')[0]
-#    print(comm)
-    logger.info(f'got {comm} command')
-    try:
-        func = responses.__dict__[comm]
-    except:
-        logger.info(f'unrecognized command {comm}')
-        return
-#    print(comm, func)
-    await func(bot, msg, msgHandle)
-
-
 class Message:
     def __init__(self, message):
         self.time = time.time()
@@ -48,34 +23,6 @@ class Message:
 
     def checkTime(self, t):
         return time.time() - self.time >= t
-
-
-def log(msg, ws):
-    bot = ws.bot
-    messages = bot.messages
-    messages.append(Message(msg))  # log the new message
-    logFor = 30  # seconds
-    for message in messages:
-        remove = message.checkTime(logFor)
-        if remove:
-            messages.pop(0)  # remove the first message if needed
-        else:
-            break
-    bot.messages = messages
-
-
-def logServer(msg, ws):
-    #    print(f'logging message {msg}')
-    bot = ws.bot
-    messages = bot.serverMessages
-    messages.append(Message(msg))  # log the new message
-    logFor = 30  # seconds
-    for message in messages:
-        if message.checkTime(logFor):
-            messages.pop(0)  # remove the first message if needed
-        else:
-            break
-    bot.serverMessages = messages
 
 
 async def send(data, connection):
@@ -138,7 +85,7 @@ class Connection:
         conn.addListener(self.reciver)
         sendEv.addListener(self.changeId)
         conn.addListener(self.heartbeat)
-        message.addListener(self.msgHandle)
+        message.addListener(self._msgHandle)
 
     async def send(self, data):
         await send(data, self)
@@ -208,7 +155,7 @@ class Connection:
             return
         if 'id' in msg:
             ws.bot.messageId += 1
-            log(msg, ws)  # log the message
+            self.log(msg, ws)  # log the message
 
     async def heartbeat(self, bot):
         while not self.closed:
@@ -217,12 +164,62 @@ class Connection:
             bot.lastPing = time.time()
             await trio.sleep(bot.pingInterval)
 
-    async def msgHandle(self, ws, msg):
+    async def _msgHandle(self, ws, msg):
         bot = ws.bot
         if msg == b'\x0c':  # pong
             ping = time.time() - bot.lastPing  # calculate the time it took to recive a pong
             bot.ping = ping
             await bot._trigger('pinged', ping)
             return
-        await msgHandle(ws, msg)
+        await self.msgHandle(ws, msg)
     #    print(msg)
+
+    async def msgHandle(self, ws, msg):
+        bot = ws.bot
+        if isinstance(msg, tuple):  # if the message has an id
+            msgId = msg[0]
+            bot.serverId += 1
+            msg = msg[1]
+            msg['id'] = msgId
+            self.logServer(msg, ws)
+        if isinstance(msg, list):  # multiple messages that should be handled
+            for m in msg:
+                await self.msgHandle(ws, m)
+            return
+    #    print(f'parsing command {msg["command"]}')
+        comm = msg['command'].split('.')[0]
+    #    print(comm)
+        logger.info(f'got {comm} command')
+        try:
+            func = responses.__dict__[comm]
+        except:
+            logger.info(f'unrecognized command {comm}')
+            return
+    #    print(comm, func)
+        await func(bot, msg, self.msgHandle)
+
+    def log(self, msg, ws):
+        bot = ws.bot
+        messages = bot.messages
+        messages.append(Message(msg))  # log the new message
+        logFor = 30  # seconds
+        for message in messages:
+            remove = message.checkTime(logFor)
+            if remove:
+                messages.pop(0)  # remove the first message if needed
+            else:
+                break
+        bot.messages = messages
+
+    def logServer(self, msg, ws):
+        #    print(f'logging message {msg}')
+        bot = ws.bot
+        messages = bot.serverMessages
+        messages.append(Message(msg))  # log the new message
+        logFor = 30  # seconds
+        for message in messages:
+            if message.checkTime(logFor):
+                messages.pop(0)  # remove the first message if needed
+            else:
+                break
+        bot.serverMessages = messages
