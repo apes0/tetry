@@ -56,7 +56,7 @@ async def migrated(bot, msg, _caller):
 
 async def err(bot, msg, _caller):
     logger.error(msg['data'])  # log the error
-    bot._trigger('error', msg['data'])  # trigger the error event
+    await bot._trigger('error', msg['data'])  # trigger the error event
 
 
 async def gmupdate(bot, msg, _caller):
@@ -90,7 +90,7 @@ async def gmupdate(bot, msg, _caller):
 
 
 async def chat(bot, msg, _caller):  # chat messages
-    await bot._trigger('message', ChatMessage(msg['data']))
+    await bot._trigger('message', ChatMessage(msg['data'], bot))
 
 
 # kick message, sent only when there is a fatal error, similar to nope

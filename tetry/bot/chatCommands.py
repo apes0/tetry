@@ -39,4 +39,3 @@ class commandBot:
             self.commands[name].addListener(func)
         for alias in aliases:
             self.register(func, name=alias)
-        print(self.commands)

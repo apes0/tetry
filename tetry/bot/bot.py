@@ -4,6 +4,7 @@ import logging
 import requests
 import trio
 
+from ..api import getUser
 from ..api.resolve import getId
 from .chatCommands import commandBot
 from .commands import (createroom, die, dm, invite, joinroom,
@@ -83,6 +84,7 @@ class Bot:
         self.worker = {}  # websocket worker
         self.friends = []  # bot friends
         self.notifications = []  # notifications
+        self.owner = {}  # owner info
 
     def run(self):
         trio.run(self._run)
@@ -120,6 +122,12 @@ class Bot:
         self.serverId = 1
         await self.connection.reconnect(endpoint, self.sockid, self.resume)
 
+    def getOwner(self):
+        me = getUser(self.id)
+        owner = me.data['botmaster']
+        ownerId = getId(owner, self.token)
+        return {'name': owner, 'id': ownerId}
+
     async def _run(self):
         self.user = getInfo(self.token)  # get info for the current user
         self.name = self.user['username']
@@ -127,6 +135,7 @@ class Bot:
         if self.user['role'] != 'bot':  # check if we aren't running on a bot account
             raise BaseException(
                 'Your account is not a bot account, ask tetr.io support (support@tetr.io) for a bot account!')
+        self.owner = self.getOwner()  # get the owner of the bot
         async with trio.open_nursery() as nurs:  # open a nursery
             self.connection = Connection(self)  # create a connection
             # connect to the websocket
