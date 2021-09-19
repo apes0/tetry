@@ -102,7 +102,7 @@ class Bot:
         event.removeListener(finish)
         return ev.result  # FIXME: use a memory channel
 
-    async def ping(self):
+    async def getPing(self):
         await self.connection.ping()
         res = await self.waitFor('pinged')
         return res[0]

@@ -162,7 +162,7 @@ class Connection:
 
     async def heartbeat(self, bot):
         while not self.closed:
-            await ping()
+            await self.ping()
             await trio.sleep(bot.pingInterval)
 
     async def _msgHandle(self, msg):
