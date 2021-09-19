@@ -68,7 +68,8 @@ bot = bot.Bot(token='token', commandPrefix='>')
 
 @bot.chatCommand()
 async def ping(_msg):
-    await bot.room.send(f'The bot\'s ping is {round(bot.ping*1000, 2)}ms')
+    ping = bot.getPing()
+    await bot.room.send(f'The bot\'s ping is {round(ping*1000, 2)}ms')
 
 bot.run()
 
