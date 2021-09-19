@@ -13,3 +13,4 @@ class Check:
 
 isOwner = Check(lambda msg: msg.user['_id'] == msg.bot.owner['id'])
 isHost = Check(lambda msg: msg.user['_id'] == msg.bot.room.owner)
+amHost = Check(lambda msg: msg.user['_id'] == msg.bot.id)

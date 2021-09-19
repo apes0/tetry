@@ -28,7 +28,7 @@ class Message:
 async def send(data, connection):
     ws = connection.ws
     sendEv = connection.sendEv
-    await sendEv.trigger(ws.nurs, data, ws, blocking=True)
+    await sendEv.trigger(connection.nurs, data, blocking=True)
 #    print(f'^  {data}')
     data = pack(data)
 #    print(data)
@@ -99,9 +99,7 @@ class Connection:
         token = self.bot.token
         ribbon = endpoint or getRibbon(token)
         ws = await connect_websocket_url(nurs, ribbon)  # connect to ribbon
-        ws.nurs = nurs
         self.nurs = nurs
-        ws.bot = self.bot
         self.ws = ws
         self.bot.connection = self
         self.endpoint = ribbon
@@ -124,22 +122,22 @@ class Connection:
             res = unpack(res)
 #            print(f'v  {res}')
             logger.info(f'recived {res}')
-            await self._message.trigger(ws.nurs, ws, res)
+            await self._message.trigger(self.nurs, res)
 
-    async def sortMessages(self, ws, res):
+    async def sortMessages(self, res):
         if not isinstance(res, tuple):
-            await self.message.trigger(ws.nurs, ws, res)
+            await self.message.trigger(self.nurs, res)
             return
-        bot = ws.bot
+        bot = self.bot
         sid = bot.serverId
         msgId = res[0]
         if msgId == sid + 1:
-            await self.message.trigger(ws.nurs, ws, res)
+            await self.message.trigger(self.nurs, res)
             msgId += 1
         else:
             self.pending[msgId] = res
         while (msg := self.pending.get(msgId)):
-            await self.message.trigger(ws.nurs, ws, msg)
+            await self.message.trigger(self.nurs, msg)
             del self.pending[msgId]
             msgId += 1
 
@@ -150,41 +148,44 @@ class Connection:
         # hello message
         await self.send(hello([message.message for message in self.bot.messages]))
 
-    async def changeId(self, msg, ws):
+    async def changeId(self, msg):
         if isinstance(msg, bytes):
             return
         if 'id' in msg:
-            ws.bot.messageId += 1
-            self.log(msg, ws)  # log the message
+            self.bot.messageId += 1
+            self.log(msg)  # log the message
+
+    async def ping(self):
+        await self.send(ping)
+        # note the time for the last sent ping, used to calculate the ping when we recive a pong
+        self.bot.lastPing = time.time()
 
     async def heartbeat(self, bot):
         while not self.closed:
-            await self.send(ping)
-            # note the time for the last sent ping, used to calculate the ping when we recive a pong
-            bot.lastPing = time.time()
+            await ping()
             await trio.sleep(bot.pingInterval)
 
-    async def _msgHandle(self, ws, msg):
-        bot = ws.bot
+    async def _msgHandle(self, msg):
+        bot = self.bot
         if msg == b'\x0c':  # pong
             ping = time.time() - bot.lastPing  # calculate the time it took to recive a pong
             bot.ping = ping
             await bot._trigger('pinged', ping)
             return
-        await self.msgHandle(ws, msg)
+        await self.msgHandle(msg)
     #    print(msg)
 
-    async def msgHandle(self, ws, msg):
-        bot = ws.bot
+    async def msgHandle(self, msg):
+        bot = self.bot
         if isinstance(msg, tuple):  # if the message has an id
             msgId = msg[0]
             bot.serverId += 1
             msg = msg[1]
             msg['id'] = msgId
-            self.logServer(msg, ws)
+            self.logServer(msg)
         if isinstance(msg, list):  # multiple messages that should be handled
             for m in msg:
-                await self.msgHandle(ws, m)
+                await self.msgHandle(m)
             return
     #    print(f'parsing command {msg["command"]}')
         comm = msg['command'].split('.')[0]
@@ -198,8 +199,8 @@ class Connection:
     #    print(comm, func)
         await func(bot, msg, self.msgHandle)
 
-    def log(self, msg, ws):
-        bot = ws.bot
+    def log(self, msg):
+        bot = self.bot
         messages = bot.messages
         messages.append(Message(msg))  # log the new message
         logFor = 30  # seconds
@@ -211,9 +212,9 @@ class Connection:
                 break
         bot.messages = messages
 
-    def logServer(self, msg, ws):
+    def logServer(self, msg):
         #    print(f'logging message {msg}')
-        bot = ws.bot
+        bot = self.bot
         messages = bot.serverMessages
         messages.append(Message(msg))  # log the new message
         logFor = 30  # seconds

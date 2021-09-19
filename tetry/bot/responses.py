@@ -26,7 +26,7 @@ async def hello(bot, msg, caller):
     seenIds = [m.message['id'] for m in bot.serverMessages]
     for m in messages:
         if m['id'] not in seenIds:
-            await caller(bot.connection.ws, m)  # handle every unseen message
+            await caller(m)  # handle every unseen message
 
 
 async def authorize(bot, msg, _caller):

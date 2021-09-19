@@ -102,6 +102,11 @@ class Bot:
         event.removeListener(finish)
         return ev.result  # FIXME: use a memory channel
 
+    async def ping(self):
+        await self.connection.ping()
+        res = await self.waitFor('pinged')
+        return res[0]
+
     async def joinRoom(self, code: str):
         code = code.upper()
         if self.room:
