@@ -119,12 +119,18 @@ def transferOwnership(msgId, uid):
     }
 
 
-def kick(msgId, uid):
+def kick(msgId, uid, duration):
     return {
         'id': msgId,
         'command': 'kick',
-        'data': uid
+        'data': {'uid': uid, 'duration': duration}
     }
+
+
+def unban(msgId, name):
+    return {'id': msgId,
+            'command': 'unban',
+            'data': name}
 
 
 def startRoom(msgId):

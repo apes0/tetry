@@ -1,4 +1,4 @@
-__version__ = '1.2.1'
+__version__ = '1.3.0'
 __licence__ = 'GPLv3'
 __author__ = 'apes0'
 __name__ = 'tetry'

@@ -41,6 +41,7 @@ events = [
     'error',  # called when there is an error
     'friendAdded',  # called when a friend is added
     'friendRemoved',  # called when a friend is removed
+    'roomUpdate',  # called when the room config is updated
 ]
 
 
@@ -89,18 +90,31 @@ class Bot:
     def run(self):
         trio.run(self._run)
 
-    async def waitFor(self, event):
-        event = self.events[event]
+    async def waitFor(self, *events):
         ev = trio.Event()
 
-        def finish(*args):
-            ev.result = args
-            ev.set()
+        def finish(event):
+            async def _finish(*args):
+                ev.result = args
+                ev.triggerer = event
+                ev.set()
+            return _finish
 
-        event.addListener(finish)
+        funcs = []
+
+        for event in events:
+            event = self.events[event]
+            funcs.append((func := finish(event)))
+            event.addListener(func)
+
         await ev.wait()
-        event.removeListener(finish)
-        return ev.result  # FIXME: use a memory channel
+
+        for func in funcs:
+            event.removeListener(func)
+
+        multiple = len(events) > 1
+        # FIXME: use a memory channel
+        return (ev.result, ev.triggerer) if multiple else ev.result
 
     async def getPing(self):
         await self.connection.ping()
@@ -168,7 +182,7 @@ class Bot:
         if not uid and name:
             uid = getId(name, self.token)
         await self.connection.send(dm(self.messageId, uid, msg))  # dm message
-        while (_dm := await self.waitFor('dm')).sender != self.id:
+        while (_dm := await self.waitFor('dm'))[0].sender != self.id:
             pass  # wait untill the sender is the bot
         return _dm[0]
 
@@ -194,6 +208,11 @@ class Bot:
                              json={'user': uid}).json()
         if not json['success']:
             raise json['errors'][0]['msg']
+
+    def getFriend(self, name=None, uid=None):
+        for friend in self.friends:
+            if friend.name == name or friend.id == uid:
+                return friend
 
     def removeFriend(self, uid=None, name=None):
         if not uid and name:

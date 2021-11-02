@@ -3,10 +3,9 @@ class Check:
         self.func = func  # check function
 
     def __call__(self, func):  # called when used as a decorator
-        async def decorator(msg):
+        async def decorator(msg, *args, **kwargs):
             if self.func(msg):
-                await func(msg)
-
+                await func(msg, *args, **kwargs)
         decorator.__name__ = func.__name__
         return decorator
 

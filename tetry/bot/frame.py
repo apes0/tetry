@@ -1,5 +1,6 @@
 class Frame:
     def __init__(self, data):
+        self.data = data
         self.type = data['type']
         self.frame = data['frame']
         if self.type in ['keydown', 'keyup']:

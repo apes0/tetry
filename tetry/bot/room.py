@@ -1,5 +1,5 @@
 from .commands import (chat, kick, leaveRoom, startRoom, switchBracket,
-                       switchBracketHost, transferOwnership, updateConfig, clearChat)
+                       switchBracketHost, transferOwnership, updateConfig, clearChat, unban)
 from .urls import room
 
 
@@ -7,6 +7,8 @@ class Room:
     def __init__(self, data, bot):
         self.id = data['id']
         self.opts = data['game']['options']
+        self.meta = data['meta']
+        self.name = self.meta['name']
         self.state = data['game']['state']
         self.match = data['game']['match']
         self.type = data['type']
@@ -46,8 +48,15 @@ class Room:
     async def makeOwner(self, uid):
         await self.bot.connection.send(transferOwnership(self.bot.messageId, uid))
 
-    async def kickUser(self, uid):
-        await self.bot.connection.send(kick(self.bot.messageId, uid))
+    async def kickUser(self, uid, duration=900):
+        await self.banUser(uid, duration)
+
+    async def banUser(self, uid, duration=2592000):
+        await self.bot.connection.send(kick(self.bot.messageId, uid, duration))
+
+    async def unbanUser(self, name):
+        name = name.lower()
+        await self.bot.connection.send(unban(self.bot.messageId, name))
 
     async def startGame(self):
         await self.bot.connection.send(startRoom(self.bot.messageId))
@@ -57,9 +66,9 @@ class Room:
 
     async def updateConfig(self, data):
         _data = []
-        for opt in data:
-            _data.append({'index': opt[0], 'value': opt[1]})
-        await self.bot.connection.send(updateConfig(self.bot.messageId, data))
+        for name, value in data.items():
+            _data.append({'index': name, 'value': value})
+        await self.bot.connection.send(updateConfig(self.bot.messageId, _data))
 
     async def clearChat(self):
         await self.bot.connection.send(clearChat)

@@ -68,6 +68,8 @@ async def gmupdate(bot, msg, _caller):
         bot.room = room
         if not oldRoom or oldRoom.left:  # trigger the joined room event if the room was of None type
             await bot._trigger('joinedRoom', room)
+        else:
+            await bot._trigger('roomUpdate', room)
     else:
         subcomm = coms[1]
         if subcomm == 'host':  # changed host
@@ -107,12 +109,10 @@ async def endmulti(bot, _msg, _caller):  # end of game
     await bot._trigger('gameEnd')
 
 
-async def ige(bot, msg, _caller):
-    #    print(f'ige: {msg}')
-    type = msg['data']['data']['type']
-    if type == 'attack':
-        bot.room.game._acceptGarbage(msg['data'])
-    # TODO: add kev type
+async def iges(bot, msg, _caller):
+    for ige in msg['data']:
+        bot.room.game._acceptGarbage(ige)
+    # TODO: find out what happened to the kev type
 
 
 async def startmulti(bot, _msg, _caller):  # start of game
@@ -123,6 +123,8 @@ async def startmulti(bot, _msg, _caller):  # start of game
 async def replay(bot, msg, _caller):  # replay message
     for f in msg['data']['frames']:  # go through every frame
         fr = Frame(f)  # make a frame object
+#        if fr.type == 'end' or fr.type == 'ige':
+#            print(fr.data)
         if fr.type == 'start' and bot.room.playing:
             await bot._trigger('playing', bot.room)
             await bot.room.game.start()
@@ -156,11 +158,11 @@ async def social(bot, msg, _caller):
             for friend in bot.friends:  # find the friend
                 if friend._id == fid:
                     bot.friends.remove(friend)  # remove the friend
-                    await bot._trigger('friendAdded', friend)
+                    await bot._trigger('friendRemoved', friend)
         elif comm == 'add':
             # add the friend
             bot.friends.append((friend := Friend(msg['data'], bot)))
-            await bot._trigger('friendRemoved', friend)
+            await bot._trigger('friendAdded', friend)
 
 
 async def leaveroom(bot, msg, _caller):
