@@ -12,4 +12,8 @@ class Check:
 
 isOwner = Check(lambda msg: msg.user['_id'] == msg.bot.owner['id'])
 isHost = Check(lambda msg: msg.user['_id'] == msg.bot.room.owner)
+isntOwner = Check(lambda msg: msg.user['_id'] != msg.bot.owner['id'])
+isntHost = Check(lambda msg: msg.user['_id'] != msg.bot.room.owner)
 amHost = Check(lambda msg: msg.user['_id'] == msg.bot.id)
+noParams = Check(lambda msg: len(msg.content.split(' ')) <= 1)
+hasParams = Check(lambda msg: len(msg.content.split(' ')) >= 1)

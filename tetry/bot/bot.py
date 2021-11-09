@@ -136,7 +136,7 @@ class Bot:
         data = await self.waitFor('joinedRoom')
         return data[0]
 
-    async def recconect(self, endpoint=None):
+    async def reconnect(self, endpoint=None):
         endpoint = endpoint or self.connection.endpoint
         self.serverId = 1
         await self.connection.reconnect(endpoint, self.sockid, self.resume)

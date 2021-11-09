@@ -32,7 +32,14 @@ async def send(data, connection):
 #    print(f'^  {data}')
     data = pack(data)
 #    print(data)
-    await ws.send_message(data)
+    try:
+        await ws.send_message(data)
+    except ConnectionClosed:
+        disconnected = False
+        if not connection.closed:
+            disconnected = True
+            connection.closed = True
+        await connection.closedEv.trigger(connection.nurs, disconnected)
     logger.info(f'sent {data}')
 
 
@@ -73,11 +80,14 @@ class Connection:
         self.sendEv = sendEv
         conn = Event('conn', errorEvent=False)
         self.conn = conn
+        closedEv = Event('closedEv', errorEvent=False)
+        self.closedEv = closedEv
+        # message event before sorting
+        _message = Event('_message', errorEvent=False)
+        self._message = _message
         # message event afetr sorting
         message = Event('message', errorEvent=False)
         self.message = message
-        _message = Event('_message', errorEvent=False)  # message event
-        self._message = _message
 
         # add event listeners
 
@@ -109,6 +119,7 @@ class Connection:
         if not self.closed:
             await self.ws.aclose()
             self.closed = True
+            await self.closedEv.trigger(self.nurs, False)
 
     async def reciver(self, _bot):
         while not self.closed:
@@ -117,7 +128,11 @@ class Connection:
                 res = await ws.get_message()
     #            print(res)
             except ConnectionClosed:
-                self.closed = True
+                disconnected = False
+                if not self.closed:
+                    disconnected = True
+                    self.closed = True
+                await self.closedEv.trigger(self.nurs, disconnected)
                 return
             res = unpack(res)
 #            print(f'v  {res}')

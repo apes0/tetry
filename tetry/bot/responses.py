@@ -40,13 +40,18 @@ async def authorize(bot, msg, _caller):
     if not bot.loggedIn:
         await bot.setPresence('online')  # set the presence
         await bot._trigger('ready')
+
+        async def reconnect(dc):
+            if dc:
+                await bot.reconnect()
+        bot.connection.closedEv.addListener(reconnect)
         bot.loggedIn = True
 
 
 async def migrate(bot, msg, _caller):
     await bot.connection.close()  # close the connection to the websocket
     ws = msg['data']['endpoint']  # get the new endpoint
-    await bot.recconect(ws)  # reconnect
+    await bot.reconnect(ws)  # reconnect
 
 
 async def migrated(bot, msg, _caller):
