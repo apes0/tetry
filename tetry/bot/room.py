@@ -37,13 +37,14 @@ class Room:
         self.left = True
 
     def getPlayer(self, id):
-        return self.players[self._getIndex(id)]
+        return self.players[index] if (index := self._getIndex(id)) is not None else None
 
     def _getIndex(self, id):
         players = self.players
         for i, player in enumerate(players):
             if player['_id'] == id:
                 return i
+        return None
 
     async def makeOwner(self, uid):
         await self.bot.connection.send(transferOwnership(self.bot.messageId, uid))

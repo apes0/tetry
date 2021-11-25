@@ -35,11 +35,7 @@ async def send(data, connection):
     try:
         await ws.send_message(data)
     except ConnectionClosed:
-        disconnected = False
-        if not connection.closed:
-            disconnected = True
-            connection.closed = True
-        await connection.closedEv.trigger(connection.nurs, disconnected)
+        pass
     logger.info(f'sent {data}')
 
 
@@ -119,7 +115,6 @@ class Connection:
         if not self.closed:
             await self.ws.aclose()
             self.closed = True
-            await self.closedEv.trigger(self.nurs, False)
 
     async def reciver(self, _bot):
         while not self.closed:

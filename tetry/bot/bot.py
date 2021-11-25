@@ -40,7 +40,6 @@ events = [
     'notification',  # called when the bot recives a notification
     'error',  # called when there is an error
     'friendAdded',  # called when a friend is added
-    'friendRemoved',  # called when a friend is removed
     'roomUpdate',  # called when the room config is updated
 ]
 
@@ -116,6 +115,9 @@ class Bot:
         # FIXME: use a memory channel
         return (ev.result, ev.triggerer) if multiple else ev.result
 
+    def getUser(self, user):
+        return getUser(user, self.token)
+
     async def getPing(self):
         await self.connection.ping()
         res = await self.waitFor('pinged')
@@ -177,6 +179,7 @@ class Bot:
 
     async def stop(self):
         await self.connection.send(die)  # die message
+        await self.connection.close()  # close the connection
 
     async def dm(self, msg, uid=None, name=None):
         if not uid and name:

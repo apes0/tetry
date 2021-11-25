@@ -1,4 +1,5 @@
 import requests
+from requests.api import head
 
 from .records import getRecords
 from .urls import addParam, addQureyParam, getAvatar, getRankImage, user
@@ -28,11 +29,12 @@ class User:
         return getRecords(self.username)
 
 
-def getUser(name):
+def getUser(name, token=None):
     url = user
     url = addParam(url, name.lower())
     with requests.Session() as ses:
-        resp = ses.get(url).json()
+        headers = {'authorization': f'Bearer {token}'} if token else None
+        resp = ses.get(url, headers=headers).json()
         if not resp['success']:
             raise Exception(resp['error'])
     return User(resp)

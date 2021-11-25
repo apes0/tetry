@@ -156,18 +156,12 @@ async def social(bot, msg, _caller):
         notif = Notification(msg['data'], bot)
         await bot._trigger('notification', notif)
         bot.notifications.append(notif)
-    elif subcomm.startswith('relationship'):
-        comm = coms[2]
-        if comm == 'remove':
-            fid = msg['data']  # id of the friend (not the user's id)
-            for friend in bot.friends:  # find the friend
-                if friend._id == fid:
-                    bot.friends.remove(friend)  # remove the friend
-                    await bot._trigger('friendRemoved', friend)
-        elif comm == 'add':
+        if notif.type == 'friend':
             # add the friend
-            bot.friends.append((friend := Friend(msg['data'], bot)))
+            bot.friends.append(
+                (friend := Friend(notif.data['relationship'], bot)))
             await bot._trigger('friendAdded', friend)
+        # note: there does not seem to be a message for removing friends
 
 
 async def leaveroom(bot, msg, _caller):
