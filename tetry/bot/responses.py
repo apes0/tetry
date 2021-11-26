@@ -49,7 +49,6 @@ async def authorize(bot, msg, _caller):
 
 
 async def migrate(bot, msg, _caller):
-    await bot.connection.close()  # close the connection to the websocket
     ws = msg['data']['endpoint']  # get the new endpoint
     await bot.reconnect(ws)  # reconnect
 
@@ -158,8 +157,9 @@ async def social(bot, msg, _caller):
         bot.notifications.append(notif)
         if notif.type == 'friend':
             # add the friend
-            bot.friends.append(
-                (friend := Friend(notif.data['relationship'], bot)))
+            friend = Friend(notif.data['relationship'], bot)
+            if not friend.id in bot.friends:
+                bot.friends.append(friend)
             await bot._trigger('friendAdded', friend)
         # note: there does not seem to be a message for removing friends
 

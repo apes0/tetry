@@ -113,8 +113,8 @@ class Connection:
 
     async def close(self):
         if not self.closed:
-            await self.ws.aclose()
             self.closed = True
+            await self.ws.aclose()
 
     async def reciver(self, _bot):
         while not self.closed:
