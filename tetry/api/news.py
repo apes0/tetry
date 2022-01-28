@@ -6,13 +6,13 @@ from .exceptions import NewsError
 
 
 class News:
-    def __init__(self, data):
+    def __init__(self, data: dict) -> None:
         self.cache = Cache(data['cache'])
         data = data['data']['news']
-        self.news = data
+        self.news: dict = data
 
 
-def get_news(stream=None, limit=25):
+def get_news(stream=None, limit=25) -> News:
     url = news
     if stream:
         url = add_param(url, stream)

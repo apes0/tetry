@@ -4,11 +4,11 @@ import time
 
 
 class Cache:
-    def __init__(self, data):
-        self.data = data
-        self.status = data['status']
-        self.cached_at = data['cached_at']
-        self.expires_at = data['cached_until']
+    def __init__(self, data: dict) -> None:
+        self.data: dict = data
+        self.status: str = data['status']
+        self.cached_at: int = data['cached_at']
+        self.expires_at: int = data['cached_until']
 
-    def is_expired(self):
+    def is_expired(self) -> bool:
         return time.time() > self.expires_at
