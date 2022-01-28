@@ -54,10 +54,10 @@ Here you will find code examples for the library.
 ### General api
 
 ```python
-from tetry import api
+from tetry.api import records
 
-def print_records(username):
-    records = api.get_records(username).records
+def print_records(username: str):
+    records: dict[str, int] = records.get_records(username).records
     for name, record in records.items():
         print(f'{name}: {record}')
 
