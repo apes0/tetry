@@ -4,8 +4,8 @@ import logging
 import requests
 import trio
 
-from ..api import getUser
-from ..api.resolve import getId
+from ..api import get_user
+from ..api.resolve import get_id
 from .chatCommands import commandBot
 from .commands import (createroom, die, dm, invite, joinroom,
                        notificationAck, presence)
@@ -116,7 +116,7 @@ class Bot:
         return (ev.result, ev.triggerer) if multiple else ev.result
 
     def getUser(self, user):
-        return getUser(user, self.token)
+        return get_user(user, self.token)
 
     async def getPing(self):
         await self.connection.ping()
@@ -144,9 +144,9 @@ class Bot:
         await self.connection.reconnect(endpoint, self.sockid, self.resume)
 
     def getOwner(self):
-        me = getUser(self.id)
+        me = get_user(self.id)
         owner = me.data['botmaster']
-        ownerId = getId(owner, self.token)
+        ownerId = get_id(owner, self.token)
         return {'name': owner, 'id': ownerId}
 
     async def _run(self):
@@ -183,7 +183,7 @@ class Bot:
 
     async def dm(self, msg, uid=None, name=None):
         if not uid and name:
-            uid = getId(name, self.token)
+            uid = get_id(name, self.token)
         await self.connection.send(dm(self.messageId, uid, msg))  # dm message
         while (_dm := await self.waitFor('dm'))[0].sender != self.id:
             pass  # wait untill the sender is the bot
@@ -191,7 +191,7 @@ class Bot:
 
     async def invite(self, uid=None, name=None):
         if not uid and name:
-            uid = getId(name, self.token)
+            uid = get_id(name, self.token)
         # invite message
         await self.connection.send(invite(self.messageId, uid))
 
@@ -205,7 +205,7 @@ class Bot:
 
     def addFriend(self, uid=None, name=None):
         if not uid and name:
-            uid = getId(name, self.token)
+            uid = get_id(name, self.token)
         headers = {'authorization': f'Bearer {self.token}'}
         json = requests.post(friend, headers=headers,
                              json={'user': uid}).json()
@@ -219,7 +219,7 @@ class Bot:
 
     def removeFriend(self, uid=None, name=None):
         if not uid and name:
-            uid = getId(name, self.token)
+            uid = get_id(name, self.token)
         headers = {'authorization': f'Bearer {self.token}'}
         json = requests.post(unfriend, headers=headers,
                              json={'user': uid}).json()

@@ -1,9 +1,8 @@
-from .urls import stream
-
 import requests
 
-from .urls import addParam
+from .urls import add_param
 from .cache import Cache
+from .exceptions import StreamError
 
 
 class Stream:
@@ -13,11 +12,11 @@ class Stream:
         self.news = data
 
 
-def getStream(stream):
+def get_stream(stream):
     url = stream
-    url = addParam(url, stream)
+    url = add_param(url, stream)
     with requests.Session() as ses:
         resp = ses.get(url).json()
         if not resp['success']:
-            raise Exception(resp['error'])
+            raise StreamError(resp['error'])
     return Stream(resp)

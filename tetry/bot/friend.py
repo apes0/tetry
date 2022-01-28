@@ -1,4 +1,4 @@
-from ..api.user import getUser
+from ..api.user import get_user
 
 
 class Friend:
@@ -19,7 +19,7 @@ class Friend:
         return self.bot.presences.get(self.id)
 
     def getInfo(self):
-        return getUser(self.id)
+        return get_user(self.id)
 
     def unfriend(self):
         self.bot.removeFriend(uid=self.id)

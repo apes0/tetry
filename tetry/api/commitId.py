@@ -1,7 +1,7 @@
 import requests
-from .urls import enviorment
+from .urls import environment
 
 
-def getCommit():
-    json = requests.get(enviorment).json()
+def get_commit():
+    json = requests.get(environment).json()
     return json['signature']['commit']['id']

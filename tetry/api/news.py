@@ -1,7 +1,8 @@
 import requests
 
-from .urls import news, addParam, addQureyParam
+from .urls import news, add_param, add_query_param
 from .cache import Cache
+from .exceptions import NewsError
 
 
 class News:
@@ -11,13 +12,13 @@ class News:
         self.news = data
 
 
-def getNews(stream=None, limit=25):
+def get_news(stream=None, limit=25):
     url = news
     if stream:
-        url = addParam(url, stream)
-    url = addQureyParam(url, {'limit': limit})
+        url = add_param(url, stream)
+    url = add_query_param(url, {'limit': limit})
     with requests.Session() as ses:
         resp = ses.get(url).json()
         if not resp['success']:
-            raise Exception(resp['error'])
+            raise NewsError(resp['error'])
     return News(resp)

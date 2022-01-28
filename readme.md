@@ -8,13 +8,20 @@ A simple python library for interacting with the [TETR.IO](https://tetr.io/) API
 
 ## contents
 
-- [About](#About)
-- [Installation](#Installation)
-- [Documentation](#Documentation)
-- [Examples](#Examples)
-- [Contribution](#Contribution)
-- [Notice](#Notice)
-- [Helpful links](#Helpful-links)
+- [Tetry](#tetry)
+  - [contents](#contents)
+  - [About](#about)
+  - [Installation](#installation)
+    - [installing from pip](#installing-from-pip)
+    - [installing from source](#installing-from-source)
+  - [Documentation](#documentation)
+  - [Examples](#examples)
+    - [General api](#general-api)
+    - [Chat commands](#chat-commands)
+    - [Simple auto-host bot](#simple-auto-host-bot)
+  - [Contribution](#contribution)
+  - [Notice](#notice)
+  - [Helpful links](#helpful-links)
 
 ## About
 
@@ -49,13 +56,13 @@ Here you will find code examples for the library.
 ```python
 from tetry import api
 
-def printRecords(username):
-    records = api.getRecords(username).records
+def print_records(username):
+    records = api.get_records(username).records
     for name, record in records.items():
         print(f'{name}: {record}')
 
 while (name := input()):
-    printRecords(name)
+    print_records(name)
 
 ```
 

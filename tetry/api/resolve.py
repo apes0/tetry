@@ -1,12 +1,13 @@
 import requests
 
 from .urls import resolve
+from .exceptions import UserError
 
 
-def getId(name, token):
+def get_id(name, token):
     name = name.lower()
-    headers = {'authorization': f'Bearer {token}'}
+    headers = {'Authorization': f'Bearer {token}'}
     res = requests.get(resolve(name), headers=headers).json()
     if not res['success']:
-        raise BaseException(res['errors'][0]['msg'])
+        raise UserError(res['errors'][0]['msg'])
     return res['_id']
