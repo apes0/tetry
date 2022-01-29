@@ -6,31 +6,31 @@ stats = f'{base}/general/stats'
 activity = f'{base}/general/activity'
 user = f'{base}/users'
 tetraLeague = f'{base}/users/lists/league'
-fulltetraLeague = f'{tetraLeague}/all'
+fullTetraLeague = f'{tetraLeague}/all'
 xp = f'{base}/users/lists/xp'
 stream = f'{base}/streams'
 news = f'{base}/news'
-enviorment = 'https://tetr.io/api/server/environment'
+environment = 'https://tetr.io/api/server/environment'
 
 
-def getRankImage(rank):
+def get_rank_image(rank):
     return f'https://tetr.io/res/league-ranks/{rank}.png'
 
 
-def getAvatar(id):
+def get_avatar(id):
     return f'https://tetr.io/user-content/avatars/{id}.jpg'
 
 
-def recordUrl(username):
-    return addParam(user, username) + '/records'
+def record_url(username):
+    return add_param(user, username) + '/records'
 
 
-def addParam(url, param):
+def add_param(url, param):
     url += f'/{param}'
     return url
 
 
-def addQureyParam(url, params):
+def add_query_param(url, params):
     url += f'?{urlencode(params)}'
     return url
 

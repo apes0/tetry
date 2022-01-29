@@ -1,40 +1,40 @@
 import requests
-from requests.api import head
 
-from .records import getRecords
-from .urls import addParam, addQureyParam, getAvatar, getRankImage, user
+from .records import Records, get_records
+from .urls import add_param, add_query_param, get_avatar, get_rank_image, user
 from .cache import Cache
+from .exceptions import UserError
 
 
 class User:
-    def __init__(self, data):
+    def __init__(self, data: dict) -> None:
         self.cache = Cache(data['cache'])
         data = data['data']['user']
         self.data = data
-        self.id = data['_id']
-        self.username = data['username']
-        self.avatarRevision = data.get('avatar_revision') or None
+        self.id: str = data['_id']
+        self.username: str = data['username']
+        self.avatar_revision: str | None = data.get('avatar_revision') or None
         self.league = data['league']
 
-    def getPfp(self, rev=True):
-        url = getAvatar(self.id)
-        if rev and self.avatarRevision:
-            url = addQureyParam(url, {'rv': self.avatarRevision})
+    def get_pfp(self, rev: bool = True) -> str:
+        url = get_avatar(self.id)
+        if rev and self.avatar_revision:
+            url = add_query_param(url, {'rv': self.avatar_revision})
         return url
 
-    def getRankImage(self):
-        return getRankImage(self.data['league']['rank'])
+    def get_rank_image(self) -> str:
+        return get_rank_image(self.data['league']['rank'])
 
-    def getRecords(self):
-        return getRecords(self.username)
+    def get_records(self) -> Records:
+        return get_records(self.username)
 
 
-def getUser(name, token=None):
+def get_user(name: str, token: str = None) -> user:
     url = user
-    url = addParam(url, name.lower())
+    url = add_param(url, name.lower())
     with requests.Session() as ses:
-        headers = {'authorization': f'Bearer {token}'} if token else None
+        headers = {'Authorization': f'Bearer {token}'} if token else None
         resp = ses.get(url, headers=headers).json()
         if not resp['success']:
-            raise Exception(resp['error'])
+            raise UserError(resp['error'])
     return User(resp)

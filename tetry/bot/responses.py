@@ -10,7 +10,7 @@ from .game import Game
 from .invite import Invite
 from .room import Room
 from .notification import Notification
-from ..api.commitId import getCommit
+from ..api.commitId import get_commit
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ async def hello(bot, msg, caller):
     messages = msg['packets']
     if not messages:
         # authorize message
-        await bot.connection.send(_authorize(bot.messageId, bot.token, bot.handling, getCommit()))
+        await bot.connection.send(_authorize(bot.messageId, bot.token, bot.handling, get_commit()))
     # get the ids for the seen messages
     seenIds = [m.message['id'] for m in bot.serverMessages]
     for m in messages:
