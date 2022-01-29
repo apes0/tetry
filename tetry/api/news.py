@@ -6,13 +6,29 @@ from .exceptions import NewsError
 
 
 class News:
+    '''
+     News class for TETR.IO news.
+    '''
+
     def __init__(self, data: dict) -> None:
         self.cache = Cache(data['cache'])
         data = data['data']['news']
         self.news: dict = data
 
 
-def get_news(stream=None, limit=25) -> News:
+def get_news(stream: str = None, limit=25) -> News:
+    '''
+    get_news Get news from TETR.IO news, optionally filtered by stream.
+
+    :param stream: The stream to filter news by.
+        Check https://tetr.io/about/api/#streamsstream, defaults to None
+    :type stream: str, optional
+    :param limit: News length limit, defaults to 25
+    :type limit: int, optional
+    :raises NewsError: Raises NewsError if the news is not found.
+    :return: The News object with the news data.
+    :rtype: News
+    '''
     url = news
     if stream:
         url = add_param(url, stream)

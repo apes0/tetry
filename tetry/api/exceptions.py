@@ -1,3 +1,8 @@
+'''
+Exceptions for the API.
+'''
+
+
 class NewsError(Exception):
     pass
 
